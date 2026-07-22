@@ -1,0 +1,7 @@
+blank_issues_enabled: false
+contact_links:
+  - name: ⚠️ This is an unofficial integration
+    url: https://github.com/sNNNeaker/HA-Copper#readme
+    about: >
+      Not affiliated with Copper Labs. The API is reverse-engineered and may
+      break without notice. Do not contact Copper Labs about this integration.

@@ -1,0 +1,79 @@
+name: Bug report
+description: Report a problem with the Copper Labs integration
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## ⚠️ This is an UNOFFICIAL integration
+
+        This project is **not affiliated with, endorsed by, or supported by
+        Copper Labs**. It talks to Copper's private consumer API, which was
+        reverse-engineered and can **change or break at any time without
+        notice**. Please do not report issues with this integration to Copper.
+
+        The hardware is **US / North America only** — it cannot read European
+        utility meters.
+
+        Before filing, please confirm the values in question look correct in
+        the official Copper app.
+  - type: checkboxes
+    id: acknowledgements
+    attributes:
+      label: Acknowledgements
+      options:
+        - label: I understand this is an unofficial, reverse-engineered integration with no stability guarantee.
+          required: true
+        - label: I have searched existing issues and this has not already been reported.
+          required: true
+  - type: input
+    id: ha-version
+    attributes:
+      label: Home Assistant version
+      placeholder: "e.g. 2026.7.0"
+    validations:
+      required: true
+  - type: input
+    id: integration-version
+    attributes:
+      label: Integration version
+      placeholder: "e.g. 0.3.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: install-method
+    attributes:
+      label: How did you install it?
+      options:
+        - HACS (custom repository)
+        - Manual copy to custom_components
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What went wrong, and what did you expect instead?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output
+      description: >
+        Settings → System → Logs, or set logger to debug for
+        custom_components.copper_labs. **Remove any tokens, emails, addresses,
+        and meter serials before pasting.**
+      render: shell
+    validations:
+      required: false
