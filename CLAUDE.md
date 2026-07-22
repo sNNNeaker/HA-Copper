@@ -25,6 +25,12 @@ consumer API and feeds the HA Energy dashboard. US/North America hardware only.
 - `custom_components/copper_labs/` — the integration (required path for HACS).
 - `custom_components/copper_labs/translations/` — `en.json`, `de.json`. Translate
   values only; never change keys.
+- `custom_components/copper_labs/brand/` — icon + logo, light and dark variants
+  (`icon.png`/`icon@2x.png`, `logo.png`/`logo@2x.png`, and `dark_*` versions).
+  HA's Brands Proxy API (2026.3+) serves these locally and they take priority
+  over the brands CDN. **Do not submit these to the `home-assistant/brands`
+  repo — it no longer accepts custom integrations.** Sizes: icon 256/512 square;
+  logo shortest side 128 (`logo.png`) / 256 (`logo@2x.png`).
 - `copper_client.py` (repo root) — standalone version of `api.py` for testing
   outside HA. Not part of the shipped component.
 - `hacs.json`, `LICENSE`, `.github/` — packaging/CI, not runtime code.

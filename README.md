@@ -68,7 +68,8 @@ Settings → Energy → add a Gas or Water source and pick the
 | `config_flow.py` | The setup UI (paste refresh token → validate → create entry) and the options UI (per-meter unit dropdowns). |
 | `__init__.py` | Entry lifecycle: `async_setup_entry` builds the client + coordinator and forwards to the sensor platform; `async_unload_entry` tears it down; an options listener reloads on unit changes. |
 | `sensor.py` | The entities: a `total_increasing` register sensor + a `measurement` rate sensor per meter, both reading from the coordinator. |
-| `translations/en.json` | UI strings for the config/options forms and error messages. |
+| `translations/` | UI strings for the config/options forms and error messages (`en.json`, plus a German `de.json`). |
+| `brand/` | Integration icon + logo (light and dark variants). Served locally by Home Assistant's Brands Proxy API (2026.3+), which takes priority over the brands CDN — so no submission to the `home-assistant/brands` repo is needed. |
 
 **Data flow.** On setup, `__init__` creates a `CopperClient` from the stored
 refresh token, calls `refresh()` + `get_state()` (in the executor, since the
