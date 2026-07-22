@@ -1,0 +1,17 @@
+# Keeps the SHA-pinned GitHub Actions current: Dependabot opens a PR when a
+# pinned action publishes a new release, updating both the SHA and the version
+# comment. CI validates the bump; merging is a manual decision.
+# (No Python ecosystem here — the integration ships no requirements; tests
+# install pytest/requests unpinned in the workflow.)
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels:
+      - "dependencies"
+    # The branch-tracked validator actions (hassfest, hacs/action) follow
+    # master/main directly and are not pinned, so Dependabot has nothing to
+    # bump for them — no exclusions needed.
