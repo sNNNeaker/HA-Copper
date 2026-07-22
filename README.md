@@ -25,9 +25,19 @@ This uses Copper's own cumulative register (`value`), so there is no
 statistics reconstruction and nothing tied to the recorder's internal API.
 
 ## Install
+
+### Via HACS (recommended)
+1. In HACS, open the ⋮ menu → **Custom repositories**, add
+   `https://github.com/sNNNeaker/HA-Copper` with type **Integration**.
+2. Search for **Copper Labs** in HACS and download it.
+3. Restart Home Assistant.
+4. Settings → Devices & Services → Add Integration → **Copper Labs**.
+
+HACS also notifies you about updates.
+
+### Manual (alternative)
 1. Copy `custom_components/copper_labs/` from this repo to
-   `config/custom_components/copper_labs/` in your Home Assistant install
-   (or add the repo to HACS as a custom repository).
+   `config/custom_components/copper_labs/` in your Home Assistant install.
 2. Restart Home Assistant.
 3. Settings → Devices & Services → Add Integration → **Copper Labs**.
 
