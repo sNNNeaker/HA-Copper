@@ -1,0 +1,53 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Copper Labs",
+        "description": "How would you like to sign in?",
+        "menu_options": {
+          "email": "Sign in with email code",
+          "token": "Advanced: paste a refresh token"
+        }
+      },
+      "email": {
+        "title": "Sign in to Copper",
+        "description": "Enter the email address for your Copper account. We'll send a one-time code to it.",
+        "data": { "email": "Copper email" }
+      },
+      "code": {
+        "title": "Enter your code",
+        "description": "Check your email for a 6-digit code from Copper and enter it here.",
+        "data": { "code": "Verification code" }
+      },
+      "token": {
+        "title": "Refresh token",
+        "description": "Paste a refresh token captured from the Copper app's POST to auth.copperlabs.com/oauth/token.",
+        "data": { "refresh_token": "Refresh token" }
+      }
+    },
+    "error": {
+      "send_failed": "Couldn't send a code to that address. Check the email and try again.",
+      "invalid_code": "That code wasn't accepted. It may be wrong or expired — request a new one.",
+      "email_unsupported": "This account can't use email sign-in. Use the 'Advanced: paste a refresh token' option instead.",
+      "invalid_auth": "The refresh token was rejected.",
+      "cannot_connect": "Could not reach the Copper API."
+    },
+    "abort": {
+      "already_configured": "This premise is already set up.",
+      "no_premise": "No premises found on this account."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Meter units",
+        "description": "Choose a display unit per meter. Copper reports gas in CCF and water in US gallons; readings are converted into your chosen unit (e.g. m³ or L for European style).",
+        "data": {
+          "gas": "Gas unit",
+          "water_indoor": "Indoor water unit",
+          "water_outdoor": "Outdoor water unit"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Copper Labs",
+        "description": "Wie möchten Sie sich anmelden?",
+        "menu_options": {
+          "email": "Mit E-Mail-Code anmelden",
+          "token": "Erweitert: Refresh-Token einfügen"
+        }
+      },
+      "email": {
+        "title": "Bei Copper anmelden",
+        "description": "Geben Sie die E-Mail-Adresse Ihres Copper-Kontos ein. Wir senden Ihnen einen Einmalcode zu.",
+        "data": { "email": "Copper-E-Mail" }
+      },
+      "code": {
+        "title": "Code eingeben",
+        "description": "Prüfen Sie Ihre E-Mails auf einen 6-stelligen Code von Copper und geben Sie ihn hier ein.",
+        "data": { "code": "Bestätigungscode" }
+      },
+      "token": {
+        "title": "Refresh-Token",
+        "description": "Fügen Sie einen Refresh-Token ein, der aus dem POST der Copper-App an auth.copperlabs.com/oauth/token abgegriffen wurde.",
+        "data": { "refresh_token": "Refresh-Token" }
+      }
+    },
+    "error": {
+      "send_failed": "Es konnte kein Code an diese Adresse gesendet werden. Prüfen Sie die E-Mail und versuchen Sie es erneut.",
+      "invalid_code": "Dieser Code wurde nicht akzeptiert. Er ist möglicherweise falsch oder abgelaufen – fordern Sie einen neuen an.",
+      "email_unsupported": "Für dieses Konto ist die Anmeldung per E-Mail nicht möglich. Verwenden Sie stattdessen die Option „Erweitert: Refresh-Token einfügen“.",
+      "invalid_auth": "Der Refresh-Token wurde abgelehnt.",
+      "cannot_connect": "Die Copper-API konnte nicht erreicht werden."
+    },
+    "abort": {
+      "already_configured": "Dieser Standort ist bereits eingerichtet.",
+      "no_premise": "Für dieses Konto wurden keine Standorte gefunden."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Zählereinheiten",
+        "description": "Wählen Sie pro Zähler eine Anzeigeeinheit. Copper meldet Gas in CCF und Wasser in US-Gallonen; die Messwerte werden in die von Ihnen gewählte Einheit umgerechnet (z. B. m³ oder L für europäische Angaben).",
+        "data": {
+          "gas": "Gaseinheit",
+          "water_indoor": "Wassereinheit innen",
+          "water_outdoor": "Wassereinheit außen"
+        }
+      }
+    }
+  }
+}
