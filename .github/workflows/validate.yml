@@ -25,3 +25,7 @@ jobs:
       - uses: hacs/action@main
         with:
           category: integration
+          # "brands" only applies to integrations shipped in HA core / listed in
+          # the home-assistant/brands repo. This is an unofficial custom repo, so
+          # that check can't pass and is not required for HACS installation.
+          ignore: brands
