@@ -51,6 +51,11 @@ PASSWORDLESS_OTP_GRANT = "http://auth0.com/oauth/grant-type/passwordless/otp"
 API_AUDIENCE = "https://api.copperlabs.com"
 # offline_access is what makes Auth0 return a refresh token we can persist.
 LOGIN_SCOPE = "openid profile email offline_access"
+# Hosts the login redirect chain may pass through. auth.copperlabs.com is an
+# Auth0 custom domain; some Auth0 flows hop via the canonical tenant domain,
+# so *.auth0.com is allowed too. Anything else aborts the login — we never
+# follow (and send cookies to) an arbitrary host.
+ALLOWED_REDIRECT_SUFFIXES = (".copperlabs.com", ".auth0.com")
 
 
 def _jwt_exp(token: str) -> int:
@@ -355,7 +360,16 @@ class CopperClient:
                     return q["code"][0]
                 # e.g. ?error=login_required when no session was established
                 raise CopperAuthError(f"No auth code in redirect: {loc}")
-            resp = self.session.get(urljoin(resp.url, loc), allow_redirects=False, timeout=30)
+            next_url = urljoin(resp.url, loc)
+            host = (urlparse(next_url).hostname or "").lower()
+            if not (
+                host.endswith(ALLOWED_REDIRECT_SUFFIXES)
+                or host in ("copperlabs.com", "auth0.com")
+            ):
+                # Never follow the chain (with our session cookies) off to an
+                # unexpected host.
+                raise CopperAuthError(f"Refusing redirect to untrusted host: {host}")
+            resp = self.session.get(next_url, allow_redirects=False, timeout=30)
         raise CopperAuthError("Auth code not found in redirect chain.")
 
     def _store_tokens(self, data: dict) -> None:

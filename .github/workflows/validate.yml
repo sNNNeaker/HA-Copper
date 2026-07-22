@@ -9,19 +9,25 @@ on:
     - cron: "0 6 * * 1"
   workflow_dispatch:
 
+# Supply-chain policy: general-purpose actions are pinned to commit SHAs
+# (tag comments alongside). The two VALIDATOR actions below stay on branch
+# refs on purpose — they are rule-checkers meant to track Home Assistant's
+# current requirements (that's also why the weekly cron exists); freezing
+# them to a SHA would validate against stale rules.
+
 jobs:
   hassfest:
     name: Home Assistant hassfest
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: home-assistant/actions/hassfest@master
 
   hacs:
     name: HACS validation
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: hacs/action@main
         with:
           category: integration
@@ -34,8 +40,8 @@ jobs:
     name: Unit tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
       # const.py/api.py are HA-free by design, so the unit tests need only

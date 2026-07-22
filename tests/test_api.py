@@ -205,6 +205,28 @@ def test_verify_and_authorize_falls_back_to_silent_authorize():
     assert second_get.kwargs["params"]["prompt"] == "none"
 
 
+def test_follow_to_code_refuses_untrusted_redirect_host():
+    # The chain must never be followed (with session cookies) to a host outside
+    # copperlabs.com / auth0.com.
+    client = api.CopperClient()
+    client.session = MagicMock()
+    client.session.get.return_value = _redirect("https://evil.example.net/phish")
+    with pytest.raises(api.CopperAuthError, match="untrusted host"):
+        client._follow_to_code(api.AUTHORIZE_URL, {})
+    client.session.get.assert_called_once()  # the evil hop itself was never fetched
+
+
+def test_follow_to_code_allows_auth0_and_copperlabs_hops():
+    client = api.CopperClient()
+    client.session = MagicMock()
+    client.session.get.side_effect = [
+        _redirect("https://tenant.auth0.com/continue"),      # canonical-domain hop
+        _redirect("https://auth.copperlabs.com/resume"),     # back to custom domain
+        _redirect("com.copperlabs.copper.rn://auth.copperlabs.com/cb?code=OK&state=s"),
+    ]
+    assert client._follow_to_code(api.AUTHORIZE_URL, {}, expected_state="s") == "OK"
+
+
 def test_follow_to_code_rejects_state_mismatch():
     # A tampered/replayed redirect must not be accepted (CSRF check).
     client = api.CopperClient()
