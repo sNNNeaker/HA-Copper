@@ -80,12 +80,17 @@ consumer API and feeds the HA Energy dashboard. US/North America hardware only.
 - The coordinator lives in `entry.runtime_data` (HA 2024.4+, min version set in
   hacs.json) — don't reintroduce `hass.data[DOMAIN]`.
 
-## Unverified (needs a real HA instance + Copper account)
-- Live test 2026-07-22 confirmed: the **OTP grant is disabled** on Copper's
-  Auth0 client, and `/passwordless/verify` alone does NOT establish a session
-  (silent `prompt=none` `/authorize` then fails with `login_required`). The
-  fallback in `api.py` therefore completes via
-  `GET /passwordless/verify_redirect` (auth0.js-style hosted completion),
-  with silent authorize kept only as a last resort. verify_redirect is the
-  current best guess and still awaits a successful live login.
-- Recorder / Energy-dashboard behavior of the `total_increasing` sensors.
+## Verified live (2026-07-22, v0.3.1, real HA + Copper account)
+- **Email-code login works.** Facts about Copper's Auth0 tenant: the OTP grant
+  is disabled (`unauthorized_client`), and `/passwordless/verify` alone does
+  NOT establish a session (silent `prompt=none` `/authorize` fails with
+  `login_required`). Login completes via `GET /passwordless/verify_redirect`
+  (auth0.js-style hosted completion) — do not "simplify" back to OTP-only or
+  silent authorize.
+- Meter discovery + entity/device creation: gas, water_indoor, water_outdoor
+  each appear as a device with Rate + Total entities.
+
+## Still unverified
+- Recorder / Energy-dashboard behavior of the `total_increasing` sensors over
+  time, restart persistence of the rotated refresh token, and the unit-change
+  statistics flow.
