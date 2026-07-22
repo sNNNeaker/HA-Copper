@@ -71,6 +71,8 @@ consumer API and feeds the HA Energy dashboard. US/North America hardware only.
 - To release: bump `version` in `manifest.json`, commit, then
   `gh release create vX.Y.Z` with the **same number** (tag `v`-prefixed).
   Never let the tag and manifest diverge.
+- **Never pick the version number yourself**: state the current version and
+  ask the user what the new one should be, then release with their answer.
 
 ## Before pushing
 - CI runs hassfest + HACS validate + pytest (tests/) on push. Keep all green.
