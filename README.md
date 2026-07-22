@@ -23,6 +23,19 @@ Energy dashboard.
 This uses Copper's own cumulative register (`value`), so there is no
 statistics reconstruction and nothing tied to the recorder's internal API.
 
+### Why the 15-minute interval is fixed (and not configurable)
+The poll timer is an API limitation, not a preference. Copper's server only
+recomputes readings every 15 minutes and serves cached responses in between
+(`Cache-Control: max-age=900`) — polling more often just downloads the **same
+cached data again** while putting extra, conspicuous load on an unofficial
+API. There is deliberately no option to shorten it, because no smaller value
+can produce fresher data.
+
+If you want a *slower* or custom schedule instead: disable polling in the
+integration's **System options** (⋮ menu on the integration page) and trigger
+updates yourself with an automation calling `homeassistant.update_entity` on
+any Copper entity — one call refreshes all meters.
+
 ## Install
 
 ### Via HACS (recommended)
