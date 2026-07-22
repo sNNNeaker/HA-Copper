@@ -34,7 +34,9 @@
     },
     "abort": {
       "already_configured": "Dieser Standort ist bereits eingerichtet.",
-      "no_premise": "Für dieses Konto wurden keine Standorte gefunden."
+      "no_premise": "Für dieses Konto wurden keine Standorte gefunden.",
+      "reauth_successful": "Die erneute Anmeldung war erfolgreich.",
+      "wrong_account": "Diese Anmeldung gehört zu einem anderen Standort als diesem Eintrag. Melden Sie sich mit dem ursprünglichen Konto an."
     }
   },
   "options": {

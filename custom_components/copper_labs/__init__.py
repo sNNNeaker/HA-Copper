@@ -9,8 +9,9 @@ from __future__ import annotations
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
 
-from .api import CopperClient
+from .api import CopperAuthError, CopperClient
 from .const import CONF_PREMISE_ID, CONF_REFRESH_TOKEN, CONF_UNITS, DEFAULT_UNITS, DOMAIN
 from .coordinator import CopperCoordinator
 
@@ -40,15 +41,26 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     # Client is sync -> run its network calls in the executor. Refresh first to
     # obtain a valid access token, then fetch /state for premise + meter discovery.
-    await hass.async_add_executor_job(client.refresh)
-    state = await hass.async_add_executor_job(client.get_state)
+    try:
+        await hass.async_add_executor_job(client.refresh)
+        state = await hass.async_add_executor_job(client.get_state)
+    except CopperAuthError as err:
+        # Bad/revoked refresh token -> start the reauth flow, don't retry forever.
+        raise ConfigEntryAuthFailed(str(err)) from err
+    except Exception as err:
+        # Network trouble etc. -> HA retries setup with backoff.
+        raise ConfigEntryNotReady(str(err)) from err
 
     # Find the premise this entry represents; fall back to the first one if the
-    # stored id isn't found (e.g. account changed), or {} if none exist.
+    # stored id isn't found (e.g. account changed).
     premises = state.get("premise_list", [])
+    if not premises:
+        # No premise -> no meters -> zero entities. Treat as "not ready" rather
+        # than silently setting up an empty integration.
+        raise ConfigEntryNotReady("Copper account has no premises")
     premise = next(
         (p for p in premises if p["id"] == entry.data.get(CONF_PREMISE_ID)),
-        premises[0] if premises else {},
+        premises[0],
     )
 
     # Merge saved unit choices over the defaults so any meter the user didn't

@@ -11,9 +11,10 @@ from __future__ import annotations
 import logging
 from datetime import datetime, timedelta, timezone
 
+from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .api import CopperClient
+from .api import CopperAuthError, CopperClient
 from .const import (
     DOMAIN,
     SCAN_INTERVAL_MINUTES,
@@ -80,9 +81,14 @@ class CopperCoordinator(DataUpdateCoordinator):
                 reading["power"] = convert_volume(reading["power"], src, dst)
                 # Key by meter id so each entity can look up its own reading.
                 data[meter["id"]] = reading
+        except CopperAuthError as err:
+            # The refresh token was rejected/revoked. Raising ConfigEntryAuthFailed
+            # makes HA start the reauth flow (a "sign in again" repair) instead of
+            # pointlessly retrying a dead token every 15 minutes.
+            raise ConfigEntryAuthFailed(str(err)) from err
         except Exception as err:
-            # Any failure -> UpdateFailed so HA marks entities unavailable and
-            # retries next interval, rather than raising and breaking the entry.
+            # Any other failure (network etc.) -> UpdateFailed so HA marks the
+            # entities unavailable and retries next interval.
             raise UpdateFailed(str(err)) from err
 
         # Rotated refresh tokens are persisted immediately by the client's

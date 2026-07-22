@@ -39,11 +39,25 @@ class CopperConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         # State carried between the email step and the code step:
         self._client: CopperClient | None = None  # holds the pending login session
         self._email: str | None = None            # the address the code was sent to
+        # Set when this flow is a re-authentication of an existing entry (the
+        # stored refresh token died); _create_entry then updates it in place.
+        self._reauth_entry: config_entries.ConfigEntry | None = None
 
     async def async_step_user(self, user_input=None):
         """First screen: let the user pick how to sign in."""
         # A menu with two options; each maps to async_step_<id> below.
         return self.async_show_menu(step_id="user", menu_options=["email", "token"])
+
+    async def async_step_reauth(self, entry_data):
+        """The stored refresh token was rejected — ask the user to sign in again.
+
+        HA starts this flow when setup/update raises ConfigEntryAuthFailed. We
+        remember which entry to fix, then reuse the normal sign-in menu.
+        """
+        self._reauth_entry = self.hass.config_entries.async_get_entry(
+            self.context["entry_id"]
+        )
+        return await self.async_step_user()
 
     # --- Path 1: email + one-time code -----------------------------------
 
@@ -132,8 +146,27 @@ class CopperConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if not premises:
             return self.async_abort(reason="no_premise")
         premise = premises[0]  # single-home accounts are the norm
-        # Prevent adding the same premise twice.
         await self.async_set_unique_id(premise["id"])
+
+        if self._reauth_entry is not None:
+            # Re-authenticating an existing entry: require the same premise so a
+            # login with a different account can't silently hijack this entry,
+            # then swap in the fresh token and reload.
+            if (
+                self._reauth_entry.unique_id
+                and self._reauth_entry.unique_id != premise["id"]
+            ):
+                return self.async_abort(reason="wrong_account")
+            return self.async_update_reload_and_abort(
+                self._reauth_entry,
+                data={
+                    **self._reauth_entry.data,
+                    CONF_REFRESH_TOKEN: refresh_token,
+                    CONF_PREMISE_ID: premise["id"],
+                },
+            )
+
+        # Prevent adding the same premise twice.
         self._abort_if_unique_id_configured()
         # Persist only the refresh token + premise id (no email/code stored).
         return self.async_create_entry(

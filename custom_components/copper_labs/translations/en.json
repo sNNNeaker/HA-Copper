@@ -34,7 +34,9 @@
     },
     "abort": {
       "already_configured": "This premise is already set up.",
-      "no_premise": "No premises found on this account."
+      "no_premise": "No premises found on this account.",
+      "reauth_successful": "Re-authentication was successful.",
+      "wrong_account": "That sign-in belongs to a different premise than this entry. Sign in with the original account."
     }
   },
   "options": {
