@@ -40,6 +40,9 @@
     }
   },
   "options": {
+    "abort": {
+      "no_units": "Dieser Standort hat keine Gas- oder Wasserzähler, daher gibt es keine Einheiten zu konfigurieren."
+    },
     "step": {
       "init": {
         "title": "Zählereinheiten",

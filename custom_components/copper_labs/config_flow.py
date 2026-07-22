@@ -191,20 +191,32 @@ class CopperOptionsFlow(config_entries.OptionsFlow):
     async def async_step_init(self, user_input=None):
         """Single options step: choose a display unit per meter."""
         if user_input is not None:
+            # Merge over any previously saved units so meter types not shown
+            # this time (e.g. meter removed from the premise) keep their choice.
+            merged = {**self.entry.options.get(CONF_UNITS, {}), **user_input}
             # Save the chosen units; the update listener in __init__ reloads the
             # entry so entities adopt them.
-            return self.async_create_entry(title="", data={CONF_UNITS: user_input})
+            return self.async_create_entry(title="", data={CONF_UNITS: merged})
 
         # Pre-fill each dropdown with the current value (saved option, else default).
         current = {**DEFAULT_UNITS, **self.entry.options.get(CONF_UNITS, {})}
-        return self.async_show_form(
-            step_id="init",
-            data_schema=vol.Schema(
-                {
-                    # vol.In(...) renders as a dropdown limited to valid units.
-                    vol.Required("gas", default=current["gas"]): vol.In(GAS_UNITS),
-                    vol.Required("water_indoor", default=current["water_indoor"]): vol.In(WATER_UNITS),
-                    vol.Required("water_outdoor", default=current["water_outdoor"]): vol.In(WATER_UNITS),
-                }
-            ),
+        # Only offer units for meter types that actually exist on this premise.
+        # Fall back to all volume types if the entry isn't loaded right now.
+        coordinator = self.hass.data.get(DOMAIN, {}).get(self.entry.entry_id)
+        present = (
+            {m["type"] for m in coordinator.meters}
+            if coordinator
+            else {"gas", "water_indoor", "water_outdoor"}
         )
+        # Electric is fixed kWh (energy, not volume), so it's never configurable.
+        choices = {"gas": GAS_UNITS, "water_indoor": WATER_UNITS, "water_outdoor": WATER_UNITS}
+        schema = {
+            # vol.In(...) renders as a dropdown limited to valid units.
+            vol.Required(t, default=current[t]): vol.In(choices[t])
+            for t in ("gas", "water_indoor", "water_outdoor")
+            if t in present
+        }
+        if not schema:
+            # e.g. an electric-only premise: nothing unit-related to configure.
+            return self.async_abort(reason="no_units")
+        return self.async_show_form(step_id="init", data_schema=vol.Schema(schema))

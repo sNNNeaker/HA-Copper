@@ -55,7 +55,7 @@ class has no therm unit — convert to CCF/m³ if your utility bills in therms.
 
 ## Energy dashboard
 Settings → Energy → add a Gas or Water source and pick the
-`sensor.copper_gas_total` (or water) entity.
+`sensor.copper_gas_meter_total` (or water) entity.
 
 ## Endpoints used (reverse-engineered)
 - `GET /api/v2/app/state` — premises, meters, gateways.
@@ -74,7 +74,8 @@ Settings → Energy → add a Gas or Water source and pick the
 | `coordinator.py` | `CopperCoordinator` (a `DataUpdateCoordinator`): the single timer-driven poller. Fetches every meter, converts units, exposes one shared `data` dict, and persists a rotated refresh token. |
 | `config_flow.py` | The setup UI (paste refresh token → validate → create entry) and the options UI (per-meter unit dropdowns). |
 | `__init__.py` | Entry lifecycle: `async_setup_entry` builds the client + coordinator and forwards to the sensor platform; `async_unload_entry` tears it down; an options listener reloads on unit changes. |
-| `sensor.py` | The entities: a `total_increasing` register sensor + a `measurement` rate sensor per meter, both reading from the coordinator. |
+| `sensor.py` | The entities: a `total_increasing` register sensor + a `measurement` rate sensor per meter (grouped as one device per meter), both reading from the coordinator. |
+| `diagnostics.py` | "Download diagnostics" support: a redacted snapshot (token/premise redacted, meter serials aliased) for bug reports. |
 | `translations/` | UI strings for the config/options forms and error messages (`en.json`, plus a German `de.json`). |
 | `brand/` | Integration icon + logo (light and dark variants). Served locally by Home Assistant's Brands Proxy API (2026.3+), which takes priority over the brands CDN — so no submission to the `home-assistant/brands` repo is needed. |
 

@@ -40,6 +40,9 @@
     }
   },
   "options": {
+    "abort": {
+      "no_units": "This premise has no gas or water meters, so there are no units to configure."
+    },
     "step": {
       "init": {
         "title": "Meter units",

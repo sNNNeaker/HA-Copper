@@ -39,10 +39,17 @@ consumer API and feeds the HA Energy dashboard. US/North America hardware only.
 
 ## Data model (don't break)
 - Per meter: a `total_increasing` register sensor (from the cumulative `value`
-  field — drives the Energy dashboard) + a `measurement` rate sensor (`power`).
+  field — drives the Energy dashboard) + a `measurement` rate sensor (`power`),
+  grouped as one HA device per meter. Electric rate is kW (power device class).
 - Poll every 15 min; the API caches `max-age=900`, so faster is pointless.
 - The API never reports units. Native units: gas=CCF, water=US gallons.
   `convert_volume()` in `const.py` converts to the user's chosen display unit.
+- Auth0 **rotates the refresh token**; the client's `token_callback` persists it
+  immediately (wired in `__init__.py`). The entry-update listener only reloads
+  when units changed — reloading on token persists would loop forever.
+- Auth failures raise `ConfigEntryAuthFailed` → HA's reauth flow
+  (`async_step_reauth` in `config_flow.py`). `diagnostics.py` provides redacted
+  downloads (token/premise redacted, meter serials aliased).
 
 ## Code style
 - Comment code where it makes sense: docstrings on functions/classes, and

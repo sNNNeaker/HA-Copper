@@ -15,6 +15,7 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.const import UnitOfPower
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
@@ -54,6 +55,14 @@ class _CopperBase(CoordinatorEntity, SensorEntity):
         super().__init__(coordinator)
         self._meter = meter
         self._mid = meter["id"]  # cache the meter id used for lookups + unique_id
+        # Group both sensors under one device per physical meter, so HA shows a
+        # proper device page and prefixes entity names with the device name.
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, self._mid)},
+            name=f"Copper {meter['type'].replace('_', ' ')} meter",
+            manufacturer="Copper Labs",
+            model=meter["type"],
+        )
 
     def _data(self) -> dict:
         """This meter's latest reading from the coordinator ({} if not present yet)."""
@@ -75,7 +84,8 @@ class CopperMeterSensor(_CopperBase):
         # Stable unique_id so HA remembers the entity across restarts; ':' isn't
         # allowed in the tail so replace it with '_'.
         self._attr_unique_id = f"{DOMAIN}_{self._mid.replace(':', '_')}_total"
-        self._attr_name = f"Copper {meter['type']} total"
+        # Short name; HA prefixes the device name ("Copper gas meter Total").
+        self._attr_name = "Total"
         # device_class drives dashboard category/valid units; None for unknown types.
         self._attr_device_class = DEVICE_CLASS.get(meter["type"])
         # Display unit = the user's chosen unit (the coordinator already converted
@@ -103,7 +113,8 @@ class CopperRateSensor(_CopperBase):
     def __init__(self, coordinator, meter):
         super().__init__(coordinator, meter)
         self._attr_unique_id = f"{DOMAIN}_{self._mid.replace(':', '_')}_rate"
-        self._attr_name = f"Copper {meter['type']} rate"
+        # Short name; HA prefixes the device name ("Copper gas meter Rate").
+        self._attr_name = "Rate"
         unit = coordinator.units.get(meter["type"])
         if meter["type"] == "electric":
             # Electric "power" is kWh consumed per hour — that's just kilowatts,
