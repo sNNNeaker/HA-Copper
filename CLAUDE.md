@@ -65,6 +65,13 @@ consumer API and feeds the HA Energy dashboard. US/North America hardware only.
   inline comments on non-obvious lines (API quirks, unit handling, HA-specific
   behavior). Don't comment the self-explanatory.
 
+## Releases (versioning)
+- HACS shows versions from **GitHub releases**; without one it falls back to
+  commit SHAs. HA's integration page shows `manifest.json`'s `version`.
+- To release: bump `version` in `manifest.json`, commit, then
+  `gh release create vX.Y.Z` with the **same number** (tag `v`-prefixed).
+  Never let the tag and manifest diverge.
+
 ## Before pushing
 - CI runs hassfest + HACS validate + pytest (tests/) on push. Keep all green.
 - JSON files must parse; translation keys must match across en/de.
