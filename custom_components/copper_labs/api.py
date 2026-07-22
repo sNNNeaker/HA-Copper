@@ -35,6 +35,11 @@ AUTH_TOKEN_URL = "https://auth.copperlabs.com/oauth/token"
 AUTHORIZE_URL = "https://auth.copperlabs.com/authorize"
 PASSWORDLESS_START_URL = "https://auth.copperlabs.com/passwordless/start"
 PASSWORDLESS_VERIFY_URL = "https://auth.copperlabs.com/passwordless/verify"
+# Auth0's hosted completion endpoint: verifies the code, LOGS THE SESSION IN,
+# and redirects through /authorize back to the app callback. This is what
+# auth0.js navigates to after /passwordless/verify — unlike verify alone, it
+# actually establishes the session that /authorize needs.
+PASSWORDLESS_VERIFY_REDIRECT_URL = "https://auth.copperlabs.com/passwordless/verify_redirect"
 
 # The app's public OAuth client id (`azp` in its JWT). Public client, no secret.
 CLIENT_ID = "l8aJ85JrIRq44CWDEcAlHLqR5wUl8Hjh"
@@ -232,7 +237,18 @@ class CopperClient:
         self._store_tokens(resp.json())
 
     def _verify_and_authorize(self, email: str, code: str) -> None:
-        """Path B: verify the code, then silently authorize using that session."""
+        """Path B: replay Auth0's hosted passwordless completion.
+
+        1) POST /passwordless/verify — validates the code (clean "wrong code"
+           error), but does NOT log a session in on its own.
+        2) GET /passwordless/verify_redirect with the full authorize params —
+           Auth0 re-verifies the code, establishes the session, and 302s
+           through /authorize to the app callback with ?code=... (this is the
+           navigation auth0.js performs after verify; the code stays valid for
+           this pair of calls). If that yields nothing, fall back to the old
+           silent prompt=none /authorize as a last resort.
+        3) Trade the auth code (+ PKCE verifier) for tokens.
+        """
         p = self._pending or {}
         verifier, challenge = p.get("verifier"), p.get("challenge")
         if not verifier or not challenge:
@@ -240,19 +256,18 @@ class CopperClient:
             # and challenge must come from the same pair or the exchange fails.
             verifier, challenge = _pkce_pair()
         state = p.get("state") or _b64url(secrets.token_bytes(16))
-        s = self.session  # shared session so the verify cookie is sent to /authorize
 
-        # 1) Verify the emailed code — establishes an Auth0 session cookie.
-        r = s.post(
+        # 1) Validate the code (shared session so any cookie carries forward).
+        r = self.session.post(
             PASSWORDLESS_VERIFY_URL,
             json={"connection": "email", "email": email, "verification_code": code},
             timeout=30,
         )
         if r.status_code >= 400:
             raise CopperAuthError(f"Code rejected: {r.status_code} {r.text[:200]}")
+        _LOGGER.debug("passwordless/verify accepted the code")
 
-        # 2) Exchange that session for an authorization code (prompt=none = silent).
-        auth_code = self._authorize_to_code({
+        auth_params = {
             "client_id": self.client_id,
             "response_type": "code",
             "redirect_uri": REDIRECT_URI,
@@ -261,10 +276,36 @@ class CopperClient:
             "state": state,
             "code_challenge": challenge,
             "code_challenge_method": "S256",
-            "prompt": "none",          # use the session verify just created
-            "login_hint": email,
-            "connection": "email",
-        })
+        }
+
+        # 2) Hosted completion (primary), silent authorize (last resort).
+        try:
+            auth_code = self._follow_to_code(
+                PASSWORDLESS_VERIFY_REDIRECT_URL,
+                {
+                    **auth_params,
+                    "connection": "email",
+                    "email": email,
+                    "verification_code": code,
+                },
+                expected_state=state,
+            )
+        except CopperAuthError as err:
+            _LOGGER.debug(
+                "verify_redirect did not yield an auth code (%s); "
+                "trying silent /authorize",
+                err,
+            )
+            auth_code = self._follow_to_code(
+                AUTHORIZE_URL,
+                {
+                    **auth_params,
+                    "prompt": "none",      # only works if a session now exists
+                    "login_hint": email,
+                    "connection": "email",
+                },
+                expected_state=state,
+            )
 
         # 3) Trade the auth code (+ PKCE verifier) for tokens.
         resp = requests.post(
@@ -282,24 +323,37 @@ class CopperClient:
             raise CopperAuthError(f"Token exchange failed: {resp.status_code} {resp.text[:200]}")
         self._store_tokens(resp.json())
 
-    def _authorize_to_code(self, params: dict, max_hops: int = 10) -> str:
-        """GET /authorize and follow redirects until the auth code appears.
+    def _follow_to_code(
+        self,
+        url: str,
+        params: dict,
+        expected_state: str | None = None,
+        max_hops: int = 10,
+    ) -> str:
+        """GET an Auth0 endpoint and follow redirects until the auth code appears.
 
-        Auth0 answers /authorize with 302s that eventually redirect to the app's
+        Auth0 answers with 302 chains that eventually redirect to the app's
         custom-scheme REDIRECT_URI carrying ?code=... We follow http(s) hops
         manually (requests can't follow the custom scheme) and read the code off
         the first custom-scheme Location.
         """
-        resp = self.session.get(AUTHORIZE_URL, params=params, allow_redirects=False, timeout=30)
+        endpoint = urlparse(url).path
+        resp = self.session.get(url, params=params, allow_redirects=False, timeout=30)
         for _ in range(max_hops):
             if resp.status_code not in (301, 302, 303, 307, 308):
-                raise CopperAuthError(f"/authorize did not redirect ({resp.status_code})")
+                raise CopperAuthError(
+                    f"{endpoint} did not redirect ({resp.status_code}) {resp.text[:200]}"
+                )
             loc = resp.headers.get("location", "")
             if loc.startswith("com.copperlabs"):        # reached the app callback
                 q = parse_qs(urlparse(loc).query)
                 if "code" in q:
+                    # CSRF check: the state we sent must come back unchanged.
+                    if expected_state and q.get("state", [None])[0] != expected_state:
+                        raise CopperAuthError("State mismatch in auth redirect.")
+                    _LOGGER.debug("Auth code obtained via %s", endpoint)
                     return q["code"][0]
-                # e.g. ?error=login_required when the session wasn't accepted
+                # e.g. ?error=login_required when no session was established
                 raise CopperAuthError(f"No auth code in redirect: {loc}")
             resp = self.session.get(urljoin(resp.url, loc), allow_redirects=False, timeout=30)
         raise CopperAuthError("Auth code not found in redirect chain.")

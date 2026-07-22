@@ -159,6 +159,63 @@ def test_complete_email_login_falls_back_only_when_grant_disabled():
     fallback.assert_called_once()  # disabled grant -> replay the app's flow
 
 
+def _redirect(location):
+    resp = MagicMock(status_code=302)
+    resp.headers = {"location": location}
+    resp.url = "https://auth.copperlabs.com/hop"
+    return resp
+
+
+def test_verify_and_authorize_completes_via_verify_redirect():
+    client = api.CopperClient()
+    client._pending = {"email": "you@example.com", "verifier": "v", "challenge": "c", "state": "s"}
+    client.session = MagicMock()
+    client.session.post.return_value = MagicMock(status_code=200)  # /verify ok
+    client.session.get.return_value = _redirect(
+        "com.copperlabs.copper.rn://auth.copperlabs.com/cb?code=AUTHCODE&state=s"
+    )
+    with patch.object(api.requests, "post", return_value=_token_response()) as post:
+        client._verify_and_authorize("you@example.com", "123456")
+    assert client.refresh_token == "new-refresh"
+    # The first GET must be the hosted verify_redirect completion, carrying the
+    # code and OUR PKCE challenge...
+    first_get = client.session.get.call_args_list[0]
+    assert "passwordless/verify_redirect" in first_get.args[0]
+    assert first_get.kwargs["params"]["verification_code"] == "123456"
+    assert first_get.kwargs["params"]["code_challenge"] == "c"
+    # ...and the token exchange must use the matching verifier + auth code.
+    exchanged = post.call_args.kwargs["json"]
+    assert exchanged["code"] == "AUTHCODE"
+    assert exchanged["code_verifier"] == "v"
+
+
+def test_verify_and_authorize_falls_back_to_silent_authorize():
+    client = api.CopperClient()
+    client._pending = {"email": "you@example.com", "verifier": "v", "challenge": "c", "state": "s"}
+    client.session = MagicMock()
+    client.session.post.return_value = MagicMock(status_code=200)
+    # verify_redirect fails outright (400) -> silent /authorize succeeds.
+    bad = MagicMock(status_code=400, text="unsupported")
+    good = _redirect("com.copperlabs.copper.rn://auth.copperlabs.com/cb?code=X&state=s")
+    client.session.get.side_effect = [bad, good]
+    with patch.object(api.requests, "post", return_value=_token_response()):
+        client._verify_and_authorize("you@example.com", "123456")
+    second_get = client.session.get.call_args_list[1]
+    assert "authorize" in second_get.args[0]
+    assert second_get.kwargs["params"]["prompt"] == "none"
+
+
+def test_follow_to_code_rejects_state_mismatch():
+    # A tampered/replayed redirect must not be accepted (CSRF check).
+    client = api.CopperClient()
+    client.session = MagicMock()
+    client.session.get.return_value = _redirect(
+        "com.copperlabs.copper.rn://auth.copperlabs.com/cb?code=X&state=EVIL"
+    )
+    with pytest.raises(api.CopperAuthError, match="State mismatch"):
+        client._follow_to_code(api.AUTHORIZE_URL, {}, expected_state="GOOD")
+
+
 def test_complete_email_login_wrong_code_surfaces_no_fallback():
     client = api.CopperClient()
     wrong_code = MagicMock(

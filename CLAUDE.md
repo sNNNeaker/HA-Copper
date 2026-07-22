@@ -81,6 +81,11 @@ consumer API and feeds the HA Energy dashboard. US/North America hardware only.
   hacs.json) — don't reintroduce `hass.data[DOMAIN]`.
 
 ## Unverified (needs a real HA instance + Copper account)
-- End-to-end Auth0 email-code login (OTP grant may be disabled; there's an
-  untested browser-flow fallback in `api.py`).
+- Live test 2026-07-22 confirmed: the **OTP grant is disabled** on Copper's
+  Auth0 client, and `/passwordless/verify` alone does NOT establish a session
+  (silent `prompt=none` `/authorize` then fails with `login_required`). The
+  fallback in `api.py` therefore completes via
+  `GET /passwordless/verify_redirect` (auth0.js-style hosted completion),
+  with silent authorize kept only as a last resort. verify_redirect is the
+  current best guess and still awaits a successful live login.
 - Recorder / Energy-dashboard behavior of the `total_increasing` sensors.
