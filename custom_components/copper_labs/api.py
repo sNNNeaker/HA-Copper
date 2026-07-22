@@ -97,8 +97,24 @@ class CopperClient:
         self.client_id = client_id
         self.session = requests.Session()     # pooled connections + shared cookies
         self._pending: dict | None = None     # PKCE/state stashed between login steps
+        # Optional hook fired with the new refresh token whenever Auth0 rotates
+        # it, so the owner can persist it IMMEDIATELY. Auth0's reuse detection
+        # can revoke the whole token family if a stale token is replayed, so a
+        # rotated-but-unpersisted token must never be lost to a crash.
+        self.token_callback = None
 
     # ------------------------------------------------------------------ tokens
+    def _set_refresh_token(self, new_token: str | None) -> None:
+        """Adopt a (possibly rotated) refresh token and notify the owner."""
+        if not new_token or new_token == self.refresh_token:
+            return
+        self.refresh_token = new_token
+        if self.token_callback:
+            try:
+                self.token_callback(new_token)
+            except Exception:  # noqa: BLE001 — persistence must never break an API call
+                pass
+
     def _token_valid(self, skew: int = 120) -> bool:
         """True if the access token won't expire within `skew` seconds."""
         return bool(self.access_token) and _jwt_exp(self.access_token) - skew > time.time()
@@ -120,9 +136,9 @@ class CopperClient:
             raise CopperAuthError(f"Token refresh failed: {resp.status_code} {resp.text[:200]}")
         data = resp.json()
         self.access_token = data["access_token"]
-        # Auth0 rotates refresh tokens: keep the new one if returned (coordinator
-        # persists it), else retain the current one.
-        self.refresh_token = data.get("refresh_token", self.refresh_token)
+        # Auth0 rotates refresh tokens: adopt the new one if returned (and let
+        # the owner persist it via token_callback), else retain the current one.
+        self._set_refresh_token(data.get("refresh_token"))
 
     def _auth_header(self) -> dict:
         """Authorization header, refreshing first if the token is stale."""
@@ -206,8 +222,11 @@ class CopperClient:
     def _verify_and_authorize(self, email: str, code: str) -> None:
         """Path B: verify the code, then silently authorize using that session."""
         p = self._pending or {}
-        verifier = p.get("verifier") or _pkce_pair()[0]
-        challenge = p.get("challenge") or _pkce_pair()[1]
+        verifier, challenge = p.get("verifier"), p.get("challenge")
+        if not verifier or not challenge:
+            # No pending login (fresh client) -> mint ONE matched pair. Verifier
+            # and challenge must come from the same pair or the exchange fails.
+            verifier, challenge = _pkce_pair()
         state = p.get("state") or _b64url(secrets.token_bytes(16))
         s = self.session  # shared session so the verify cookie is sent to /authorize
 
@@ -276,9 +295,9 @@ class CopperClient:
     def _store_tokens(self, data: dict) -> None:
         """Save tokens from any successful grant; require a refresh token."""
         self.access_token = data["access_token"]
-        self.refresh_token = data.get("refresh_token")
-        if not self.refresh_token:
+        if not data.get("refresh_token"):
             raise CopperAuthError("No refresh_token returned; offline_access may be disabled.")
+        self._set_refresh_token(data["refresh_token"])
 
     # --------------------------------------------------------------- data API
     def _get(self, path: str, **params) -> dict:

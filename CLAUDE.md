@@ -16,7 +16,9 @@ consumer API and feeds the HA Energy dashboard. US/North America hardware only.
   real emails, addresses, `premise_id`s, lat/lng, or real meter serials. Use
   placeholders (`12:0000000000`, `IQ:00000000`, `you@example.com`). The public
   OAuth `client_id` and endpoint paths are OK to keep.
-- **`manifest.json` requirements must stay pinned** (e.g. `requests==2.32.3`) or
+- **`manifest.json` `requirements` is deliberately empty** — `requests` ships
+  with HA core, and an exact pin here can conflict with (even downgrade) core's
+  copy. If a new requirement is ever added, it must be pinned (`pkg==x.y.z`) or
   hassfest CI fails.
 - Keep `manifest.json` `domain` == `const.py` `DOMAIN` == folder name
   (`copper_labs`).
@@ -41,6 +43,11 @@ consumer API and feeds the HA Energy dashboard. US/North America hardware only.
 - Poll every 15 min; the API caches `max-age=900`, so faster is pointless.
 - The API never reports units. Native units: gas=CCF, water=US gallons.
   `convert_volume()` in `const.py` converts to the user's chosen display unit.
+
+## Code style
+- Comment code where it makes sense: docstrings on functions/classes, and
+  inline comments on non-obvious lines (API quirks, unit handling, HA-specific
+  behavior). Don't comment the self-explanatory.
 
 ## Before pushing
 - CI runs hassfest + HACS validate on push. Keep both green.

@@ -68,7 +68,7 @@ Settings → Energy → add a Gas or Water source and pick the
 
 | File | Role |
 | --- | --- |
-| `manifest.json` | Integration metadata: domain, `config_flow: true`, `requirements` (`requests`), `iot_class: cloud_polling`, version. |
+| `manifest.json` | Integration metadata: domain, `config_flow: true`, `iot_class: cloud_polling`, version. No `requirements` — `requests` ships with HA core. |
 | `const.py` | Constants (domain, config keys, 15-min interval) plus the unit tables and `convert_volume()`. Pure Python, no HA imports, so it's importable by scripts/tests. |
 | `api.py` | Synchronous `CopperClient` — Auth0 refresh, `/state`, `/usage/{meter}`. The only code that talks HTTP to Copper. |
 | `coordinator.py` | `CopperCoordinator` (a `DataUpdateCoordinator`): the single timer-driven poller. Fetches every meter, converts units, exposes one shared `data` dict, and persists a rotated refresh token. |

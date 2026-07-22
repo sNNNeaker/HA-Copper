@@ -14,6 +14,7 @@ from homeassistant.components.sensor import (
     SensorEntity,
     SensorStateClass,
 )
+from homeassistant.const import UnitOfPower
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
@@ -104,9 +105,15 @@ class CopperRateSensor(_CopperBase):
         self._attr_unique_id = f"{DOMAIN}_{self._mid.replace(':', '_')}_rate"
         self._attr_name = f"Copper {meter['type']} rate"
         unit = coordinator.units.get(meter["type"])
-        # A rate, so the unit is "<unit>/h" (e.g. gal/h); no device_class because
-        # a per-hour rate isn't a valid gas/water device-class unit.
-        self._attr_native_unit_of_measurement = f"{unit}/h" if unit else None
+        if meter["type"] == "electric":
+            # Electric "power" is kWh consumed per hour — that's just kilowatts,
+            # so give it the proper power device class instead of "kWh/h".
+            self._attr_device_class = SensorDeviceClass.POWER
+            self._attr_native_unit_of_measurement = UnitOfPower.KILO_WATT
+        else:
+            # A volume rate ("gal/h"); no device_class because gas/water device
+            # classes don't accept per-hour units.
+            self._attr_native_unit_of_measurement = f"{unit}/h" if unit else None
 
     @property
     def native_value(self):

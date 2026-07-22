@@ -22,6 +22,22 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up one configured account (config entry). Returns True on success."""
     # Build the client from the stored refresh token (the only persisted secret).
     client = CopperClient(refresh_token=entry.data[CONF_REFRESH_TOKEN])
+
+    # Persist rotated refresh tokens the moment the client sees them. Auth0's
+    # reuse detection can revoke the whole token family if a stale token is
+    # replayed, so waiting until the end of an update cycle risks losing the
+    # only valid token (e.g. a failure between rotation and persist). The client
+    # calls this from an executor thread -> hop to the event loop to touch HA.
+    def _persist_refresh_token(new_token: str) -> None:
+        def _update() -> None:
+            if entry.data.get(CONF_REFRESH_TOKEN) != new_token:
+                hass.config_entries.async_update_entry(
+                    entry, data={**entry.data, CONF_REFRESH_TOKEN: new_token}
+                )
+        hass.loop.call_soon_threadsafe(_update)
+
+    client.token_callback = _persist_refresh_token
+
     # Client is sync -> run its network calls in the executor. Refresh first to
     # obtain a valid access token, then fetch /state for premise + meter discovery.
     await hass.async_add_executor_job(client.refresh)
@@ -41,7 +57,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     # Create the coordinator and do the first fetch synchronously: if it fails,
     # setup fails cleanly (HA will retry) instead of adding broken entities.
-    coordinator = CopperCoordinator(hass, entry, client, premise, units)
+    coordinator = CopperCoordinator(hass, client, premise, units)
     await coordinator.async_config_entry_first_refresh()
 
     # Stash the coordinator so the sensor platform (and unload) can find it,
@@ -56,7 +72,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 
 async def _async_reload(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    """Options changed -> reload the entry to apply them."""
+    """Reload the entry when its *options* (units) changed.
+
+    This listener fires on ANY entry update, including the refresh-token
+    persistence above. Reloading on those would loop forever (reload -> setup
+    -> token refresh -> rotation -> persist -> reload ...), so only reload when
+    the effective units actually differ from what the coordinator is using.
+    """
+    coordinator = hass.data.get(DOMAIN, {}).get(entry.entry_id)
+    new_units = {**DEFAULT_UNITS, **entry.options.get(CONF_UNITS, {})}
+    if coordinator and coordinator.units == new_units:
+        return  # only the token (or title) changed — nothing to re-apply
     await hass.config_entries.async_reload(entry.entry_id)
 
 

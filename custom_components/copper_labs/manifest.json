@@ -6,6 +6,6 @@
   "documentation": "https://github.com/sNNNeaker/HA-Copper",
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/sNNNeaker/HA-Copper/issues",
-  "requirements": ["requests==2.32.3"],
+  "requirements": [],
   "version": "0.3.0"
 }

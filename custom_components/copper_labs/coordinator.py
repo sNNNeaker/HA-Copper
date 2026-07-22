@@ -15,7 +15,6 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 
 from .api import CopperClient
 from .const import (
-    CONF_REFRESH_TOKEN,
     DOMAIN,
     SCAN_INTERVAL_MINUTES,
     SOURCE_UNITS,
@@ -46,7 +45,7 @@ def _last_reading(rows: list[dict]) -> dict:
 
 
 class CopperCoordinator(DataUpdateCoordinator):
-    def __init__(self, hass, entry, client: CopperClient, premise: dict, units: dict):
+    def __init__(self, hass, client: CopperClient, premise: dict, units: dict):
         # Register with HA's coordinator machinery: name for logs, and the poll
         # interval (15 min to match the API's cache).
         super().__init__(
@@ -55,7 +54,6 @@ class CopperCoordinator(DataUpdateCoordinator):
             name=DOMAIN,
             update_interval=timedelta(minutes=SCAN_INTERVAL_MINUTES),
         )
-        self.entry = entry          # kept so we can persist a rotated refresh token
         self.client = client        # the (sync) API client
         self.premise = premise      # this entry's premise object from /state
         self.units = units          # {meter_type: chosen display unit}
@@ -87,12 +85,6 @@ class CopperCoordinator(DataUpdateCoordinator):
             # retries next interval, rather than raising and breaking the entry.
             raise UpdateFailed(str(err)) from err
 
-        # The client may have rotated the refresh token during the calls above.
-        # Persist the new one into the config entry so a restart still authenticates.
-        stored = self.entry.data.get(CONF_REFRESH_TOKEN)
-        if self.client.refresh_token and self.client.refresh_token != stored:
-            self.hass.config_entries.async_update_entry(
-                self.entry,
-                data={**self.entry.data, CONF_REFRESH_TOKEN: self.client.refresh_token},
-            )
+        # Rotated refresh tokens are persisted immediately by the client's
+        # token_callback (wired up in __init__.py) — nothing to do here.
         return data

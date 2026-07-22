@@ -71,6 +71,11 @@ class CopperConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_code(self, user_input=None):
         """Collect the emailed code and exchange it for tokens."""
+        # If HA restarted (or the flow resumed) between steps, the in-memory
+        # login session is gone — send the user back to the email step instead
+        # of crashing on the None client below.
+        if self._client is None or self._email is None:
+            return await self.async_step_email()
         errors = {}
         if user_input is not None:
             try:
