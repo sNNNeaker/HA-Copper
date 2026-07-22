@@ -44,7 +44,11 @@ consumer API and feeds the HA Energy dashboard. US/North America hardware only.
 ## Data model (don't break)
 - Per meter: a `total_increasing` register sensor (from the cumulative `value`
   field — drives the Energy dashboard) + a `measurement` rate sensor (`power`),
-  grouped as one HA device per meter. Electric rate is kW (power device class).
+  grouped as one HA device per meter. Rate sensors: electric = kW (power
+  device class); gas/water = `volume_flow_rate` in m³/h (the coordinator keeps
+  `power` in NATIVE units; the sensor converts). Don't invent units like
+  "gal/h" — non-standard units break Energy-dashboard pickers and HA's unit
+  conversion.
 - Poll every 15 min; the API caches `max-age=900`, so faster is pointless.
 - The API never reports units. Native units: gas=CCF, water=US gallons.
   `convert_volume()` in `const.py` converts to the user's chosen display unit.

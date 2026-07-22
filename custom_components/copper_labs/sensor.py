@@ -14,11 +14,11 @@ from homeassistant.components.sensor import (
     SensorEntity,
     SensorStateClass,
 )
-from homeassistant.const import UnitOfPower
+from homeassistant.const import UnitOfPower, UnitOfVolumeFlowRate
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN
+from .const import DOMAIN, SOURCE_UNITS, convert_volume
 
 # Map our meter type -> HA device class. The device class drives the dashboard
 # category (gas/water source), the icon, and which units HA considers valid.
@@ -115,19 +115,27 @@ class CopperRateSensor(_CopperBase):
         self._attr_unique_id = f"{DOMAIN}_{self._mid.replace(':', '_')}_rate"
         # Short name; HA prefixes the device name ("Copper gas meter Rate").
         self._attr_name = "Rate"
-        unit = coordinator.units.get(meter["type"])
         if meter["type"] == "electric":
             # Electric "power" is kWh consumed per hour — that's just kilowatts,
             # so give it the proper power device class instead of "kWh/h".
             self._attr_device_class = SensorDeviceClass.POWER
             self._attr_native_unit_of_measurement = UnitOfPower.KILO_WATT
         else:
-            # A volume rate ("gal/h"); no device_class because gas/water device
-            # classes don't accept per-hour units.
-            self._attr_native_unit_of_measurement = f"{unit}/h" if unit else None
+            # A real volume-flow-rate entity: valid unit (m³/h), Energy
+            # dashboard accepts it as "gas flow rate", and users can switch the
+            # displayed unit (gal/min, L/min, ...) in HA's entity settings —
+            # made-up units like "gal/h" support none of that.
+            self._attr_device_class = SensorDeviceClass.VOLUME_FLOW_RATE
+            self._attr_native_unit_of_measurement = (
+                UnitOfVolumeFlowRate.CUBIC_METERS_PER_HOUR
+            )
 
     @property
     def native_value(self):
-        power = self._data().get("power")
-        # Round for a tidy state; None -> unavailable.
-        return round(float(power), 3) if power is not None else None
+        power = self._data().get("power")  # native units per hour (coordinator)
+        if power is None:
+            return None
+        if self._meter["type"] == "electric":
+            return round(float(power), 3)  # kWh/h == kW, no conversion
+        # native volume per hour -> m³ per hour.
+        return round(convert_volume(float(power), SOURCE_UNITS[self._meter["type"]], "m³"), 5)

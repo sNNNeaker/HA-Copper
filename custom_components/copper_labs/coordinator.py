@@ -73,21 +73,24 @@ class CopperCoordinator(DataUpdateCoordinator):
                     self.client.usage, meter["id"], now - timedelta(hours=24), now
                 )
                 reading = _last_reading(res.get("results", []))
-                # Convert from the meter's native unit into the user's chosen unit
-                # (no-op when they match, which is the default).
+                # Convert the register from the meter's native unit into the
+                # user's chosen unit (no-op when they match, the default).
+                # `power` stays NATIVE: the rate sensor converts it to a proper
+                # volume-flow-rate unit itself (m³/h), where HA handles display
+                # unit conversion natively.
                 src = SOURCE_UNITS.get(meter["type"])
                 dst = self.units.get(meter["type"])
                 reading["value"] = convert_volume(reading["value"], src, dst)
-                reading["power"] = convert_volume(reading["power"], src, dst)
                 # Key by meter id so each entity can look up its own reading.
                 data[meter["id"]] = reading
                 _LOGGER.debug(
-                    "Meter %s (%s): value=%s %s, power=%s, at %s",
+                    "Meter %s (%s): value=%s %s, power=%s %s/h, at %s",
                     meter["id"],
                     meter["type"],
                     reading["value"],
                     dst,
                     reading["power"],
+                    src,
                     reading["time"],
                 )
         except CopperAuthError as err:
