@@ -1,8 +1,7 @@
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="custom_components/copper_labs/brand/dark_logo.png">
-    <img alt="Copper Labs" src="custom_components/copper_labs/brand/logo.png" width="420">
-  </picture>
+  <!-- Plain <img> with an absolute URL: HACS's markdown renderer doesn't
+       support <picture>/<source>, and relative paths only resolve on GitHub. -->
+  <img alt="Copper Labs" src="https://raw.githubusercontent.com/sNNNeaker/HA-Copper/main/custom_components/copper_labs/brand/logo%402x.png" width="420">
 </p>
 
 # Copper Labs — Home Assistant custom component
