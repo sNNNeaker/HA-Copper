@@ -87,3 +87,6 @@ entry so restarts keep working.
 
 ## Status / caveats
 - Unofficial API — endpoints or auth could change without notice.
+- Built with AI assistance — this integration was largely written with the help
+  of AI tooling. Review the code yourself before trusting it, and expect the odd
+  rough edge.
