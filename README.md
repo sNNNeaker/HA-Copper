@@ -86,7 +86,4 @@ entry so restarts keep working.
 > integration uses `api.py`; the two share the same logic.
 
 ## Status / caveats
-- v0.2, validated for import/syntax and against real captured payloads; smoke-test
-  on your HA instance.
-- Electric isn't present on the sample premise; the code handles it if you have one.
 - Unofficial API — endpoints or auth could change without notice.
