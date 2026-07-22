@@ -11,7 +11,7 @@ from homeassistant.components.diagnostics import async_redact_data
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
-from .const import CONF_PREMISE_ID, CONF_REFRESH_TOKEN, DOMAIN
+from .const import CONF_PREMISE_ID, CONF_REFRESH_TOKEN
 
 # Entry-data keys whose values must never leave the user's machine.
 TO_REDACT = {CONF_REFRESH_TOKEN, CONF_PREMISE_ID}
@@ -21,7 +21,7 @@ async def async_get_config_entry_diagnostics(
     hass: HomeAssistant, entry: ConfigEntry
 ) -> dict:
     """Return a redacted diagnostics payload for this config entry."""
-    coordinator = hass.data[DOMAIN][entry.entry_id]
+    coordinator = entry.runtime_data
     # Meter ids are physical serial numbers -> replace them with stable,
     # anonymous aliases (gas_0, water_indoor_1, ...) that still let a report
     # correlate readings to meters.

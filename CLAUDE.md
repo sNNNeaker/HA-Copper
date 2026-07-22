@@ -35,6 +35,10 @@ consumer API and feeds the HA Energy dashboard. US/North America hardware only.
   logo shortest side 128 (`logo.png`) / 256 (`logo@2x.png`).
 - `copper_client.py` (repo root) — standalone version of `api.py` for testing
   outside HA. Not part of the shipped component.
+- `tests/` — pure unit tests for the HA-free modules only (`const.py`,
+  `api.py`), imported as top-level modules via `tests/conftest.py` so the
+  package `__init__.py` (which needs HA) never runs. Keep new tests HA-free or
+  they'll break CI, which installs only pytest + requests.
 - `hacs.json`, `LICENSE`, `.github/` — packaging/CI, not runtime code.
 
 ## Data model (don't break)
@@ -57,8 +61,10 @@ consumer API and feeds the HA Energy dashboard. US/North America hardware only.
   behavior). Don't comment the self-explanatory.
 
 ## Before pushing
-- CI runs hassfest + HACS validate on push. Keep both green.
-- `requests` stays pinned; JSON files must parse; translation keys must match.
+- CI runs hassfest + HACS validate + pytest (tests/) on push. Keep all green.
+- JSON files must parse; translation keys must match across en/de.
+- The coordinator lives in `entry.runtime_data` (HA 2024.4+, min version set in
+  hacs.json) — don't reintroduce `hass.data[DOMAIN]`.
 
 ## Unverified (needs a real HA instance + Copper account)
 - End-to-end Auth0 email-code login (OTP grant may be disabled; there's an

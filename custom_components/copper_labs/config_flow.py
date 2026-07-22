@@ -202,7 +202,7 @@ class CopperOptionsFlow(config_entries.OptionsFlow):
         current = {**DEFAULT_UNITS, **self.entry.options.get(CONF_UNITS, {})}
         # Only offer units for meter types that actually exist on this premise.
         # Fall back to all volume types if the entry isn't loaded right now.
-        coordinator = self.hass.data.get(DOMAIN, {}).get(self.entry.entry_id)
+        coordinator = getattr(self.entry, "runtime_data", None)
         present = (
             {m["type"] for m in coordinator.meters}
             if coordinator

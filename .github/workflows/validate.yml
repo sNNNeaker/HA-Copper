@@ -29,3 +29,16 @@ jobs:
           # the home-assistant/brands repo. This is an unofficial custom repo, so
           # that check can't pass and is not required for HACS installation.
           ignore: brands
+
+  tests:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # const.py/api.py are HA-free by design, so the unit tests need only
+      # pytest + requests — no Home Assistant install (see tests/conftest.py).
+      - run: pip install pytest requests
+      - run: pytest tests/ -v

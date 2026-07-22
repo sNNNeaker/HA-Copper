@@ -152,7 +152,27 @@ class CopperClient:
             include_start=str(include_start).lower(),
         )
 
-    def usage_last_24h(self, meter_id: str, granularity: str = "fifteenminute") -> dict:
+    def usage(
+        self,
+        meter_id: str,
+        start: datetime | str,
+        end: datetime | str,
+        granularity: str = "auto",
+        include_start: bool = True,
+    ) -> dict:
+        """Cumulative register + interval usage — the endpoint the HA integration
+        uses (see api.py). Returns {"results": [{time, power, usage, value,
+        actual}, ...]} where `value` is the monotonic meter reading."""
+        return self._get(
+            f"usage/{quote(meter_id, safe='')}",
+            start=_iso_z(start),
+            end=_iso_z(end),
+            granularity=granularity,
+            include_start=str(include_start).lower(),
+        )
+
+    def average_series_last_24h(self, meter_id: str, granularity: str = "fifteenminute") -> dict:
+        """Convenience: average-series over the trailing 24 hours."""
         now = datetime.now(timezone.utc)
         return self.average_series(meter_id, now - timedelta(hours=24), now, granularity)
 
@@ -179,7 +199,7 @@ if __name__ == "__main__":
     for p in state["premise_list"]:
         print(f'\nPremise: {p["name"]}  ({p["id"]})  tz={p["timezone"]}')
         for m in p["meter_list"]:
-            series = client.usage_last_24h(m["id"])
+            series = client.average_series_last_24h(m["id"])
             print(
                 f'  {m["type"]:14} id={m["id"]:16} state={m["state"]:10} '
                 f'24h sum_energy={series.get("sum_energy", 0):.3f}'

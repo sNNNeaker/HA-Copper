@@ -94,6 +94,12 @@ entry so restarts keep working.
 > standalone version of `api.py` for running/testing outside Home Assistant. The
 > integration uses `api.py`; the two share the same logic.
 
+## Development
+- Requires Home Assistant **2024.4+** (uses `entry.runtime_data`).
+- `tests/` holds pure unit tests for the HA-free modules (`const.py`, `api.py`);
+  they run with just `pip install pytest requests` — no HA install needed —
+  and run in CI alongside hassfest and HACS validation.
+
 ## Caveats
 - Unofficial API — endpoints or auth could change without notice.
 - Built with AI assistance — this integration was largely written with the help

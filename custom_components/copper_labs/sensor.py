@@ -33,7 +33,7 @@ DEVICE_CLASS = {
 async def async_setup_entry(hass, entry, async_add_entities):
     """Create two sensor entities for each discovered meter."""
     # The coordinator was stashed in __init__.async_setup_entry.
-    coordinator = hass.data[DOMAIN][entry.entry_id]
+    coordinator = entry.runtime_data
     entities = []
     for meter in coordinator.meters:
         entities.append(CopperMeterSensor(coordinator, meter))  # cumulative total

@@ -12,7 +12,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
 
 from .api import CopperAuthError, CopperClient
-from .const import CONF_PREMISE_ID, CONF_REFRESH_TOKEN, CONF_UNITS, DEFAULT_UNITS, DOMAIN
+from .const import CONF_PREMISE_ID, CONF_REFRESH_TOKEN, CONF_UNITS, DEFAULT_UNITS
 from .coordinator import CopperCoordinator
 
 # Which entity platforms this integration provides. Only sensors here.
@@ -72,9 +72,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     coordinator = CopperCoordinator(hass, client, premise, units)
     await coordinator.async_config_entry_first_refresh()
 
-    # Stash the coordinator so the sensor platform (and unload) can find it,
-    # keyed by entry id to support multiple accounts.
-    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
+    # Stash the coordinator on the entry so the sensor platform, options flow
+    # and diagnostics can find it (modern runtime_data pattern, HA 2024.4+).
+    entry.runtime_data = coordinator
     # Create the sensor entities.
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     # When the user changes options (units), reload the entry so entities pick up
@@ -91,7 +91,7 @@ async def _async_reload(hass: HomeAssistant, entry: ConfigEntry) -> None:
     -> token refresh -> rotation -> persist -> reload ...), so only reload when
     the effective units actually differ from what the coordinator is using.
     """
-    coordinator = hass.data.get(DOMAIN, {}).get(entry.entry_id)
+    coordinator = getattr(entry, "runtime_data", None)
     new_units = {**DEFAULT_UNITS, **entry.options.get(CONF_UNITS, {})}
     if coordinator and coordinator.units == new_units:
         return  # only the token (or title) changed — nothing to re-apply
@@ -99,9 +99,9 @@ async def _async_reload(hass: HomeAssistant, entry: ConfigEntry) -> None:
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Tear down the entry: remove its platforms and drop the coordinator."""
-    unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
-    if unloaded:
-        # Only drop our stored data if the platforms unloaded cleanly.
-        hass.data[DOMAIN].pop(entry.entry_id)
-    return unloaded
+    """Tear down the entry: remove its platforms.
+
+    The coordinator lives in entry.runtime_data, which is not persisted and is
+    replaced on the next setup — no manual cleanup needed.
+    """
+    return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
