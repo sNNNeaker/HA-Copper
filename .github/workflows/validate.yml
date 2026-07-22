@@ -15,6 +15,11 @@ on:
 # current requirements (that's also why the weekly cron exists); freezing
 # them to a SHA would validate against stale rules.
 
+# Least privilege: every job only reads the repo, so the GITHUB_TOKEN gets
+# read-only access instead of GitHub's broader default permission set.
+permissions:
+  contents: read
+
 jobs:
   hassfest:
     name: Home Assistant hassfest
