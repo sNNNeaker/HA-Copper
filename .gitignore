@@ -1,15 +1,18 @@
 # --- Secrets & captured data (NEVER commit — see scrub notes) ---
-*.har                # proxy captures: contain tokens + PII
-.env                 # environment files with credentials
+# proxy captures (contain tokens + PII)
+*.har
+# environment files with credentials
+.env
 .env.*
-*.pem                # keys / certificates
+# keys / certificates
+*.pem
 *.key
 secrets.*
 tokens.*
 
 # --- Python build artifacts (regenerated automatically) ---
 __pycache__/
-*.py[cod]            # .pyc / .pyo / .pyd
+*.py[cod]
 *.egg-info/
 build/
 dist/
