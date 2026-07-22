@@ -78,6 +78,14 @@ consumer API and feeds the HA Energy dashboard. US/North America hardware only.
 - **Never pick the version number yourself**: state the current version and
   ask the user what the new one should be, then release with their answer.
 
+## Branch workflow
+- **Code changes never go directly to `main`.** Push them to a `preview`
+  branch first; the user tests on their HA, then the change is merged to
+  `main` (and released) after their approval. Docs-only changes may go
+  straight to main. Note: HACS only installs releases/the default branch, so
+  preview testing happens by manually copying `custom_components/copper_labs/`
+  to the HA instance (or merging to main without tagging).
+
 ## Before pushing
 - CI runs hassfest + HACS validate + pytest (tests/) on push. Keep all green.
 - JSON files must parse; translation keys must match across en/de.
