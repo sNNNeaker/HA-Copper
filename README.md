@@ -85,7 +85,7 @@ entry so restarts keep working.
 > standalone version of `api.py` for running/testing outside Home Assistant. The
 > integration uses `api.py`; the two share the same logic.
 
-## Status / caveats
+## Caveats
 - Unofficial API — endpoints or auth could change without notice.
 - Built with AI assistance — this integration was largely written with the help
   of AI tooling. Review the code yourself before trusting it, and expect the odd
