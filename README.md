@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="custom_components/copper_labs/brand/dark_logo.png">
+    <img alt="Copper Labs" src="custom_components/copper_labs/brand/logo.png" width="420">
+  </picture>
+</p>
+
 # Copper Labs — Home Assistant custom component
 
 Reads electric/gas/water meter data from the Copper Labs consumer API
