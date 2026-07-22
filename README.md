@@ -94,6 +94,22 @@ entry so restarts keep working.
 > standalone version of `api.py` for running/testing outside Home Assistant. The
 > integration uses `api.py`; the two share the same logic.
 
+## Logging
+Everything logs into Home Assistant's standard log (Settings → System → Logs).
+Two ways to get debug detail (API calls, token refreshes, per-meter readings):
+
+- **Configure → Debug logging** — a persistent toggle in the integration's
+  options; survives restarts (handy for watching a cloud issue over days).
+- The usual YAML route:
+  ```yaml
+  logger:
+    logs:
+      custom_components.copper_labs: debug
+  ```
+
+Debug logs never contain tokens or sign-in codes, but they do include meter
+serials — scrub those before attaching logs to a public issue.
+
 ## Development
 - Requires Home Assistant **2024.4+** (uses `entry.runtime_data`).
 - `tests/` holds pure unit tests for the HA-free modules (`const.py`, `api.py`);

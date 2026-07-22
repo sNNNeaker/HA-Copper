@@ -40,17 +40,15 @@
     }
   },
   "options": {
-    "abort": {
-      "no_units": "Dieser Standort hat keine Gas- oder Wasserzähler, daher gibt es keine Einheiten zu konfigurieren."
-    },
     "step": {
       "init": {
-        "title": "Zählereinheiten",
-        "description": "Wählen Sie pro Zähler eine Anzeigeeinheit. Copper meldet Gas in CCF und Wasser in US-Gallonen; die Messwerte werden in die von Ihnen gewählte Einheit umgerechnet (z. B. m³ oder L für europäische Angaben).",
+        "title": "Copper-Labs-Optionen",
+        "description": "Wählen Sie pro Zähler eine Anzeigeeinheit. Copper meldet Gas in CCF und Wasser in US-Gallonen; die Messwerte werden in die von Ihnen gewählte Einheit umgerechnet (z. B. m³ oder L für europäische Angaben). Die Debug-Protokollierung schreibt detaillierte API-Aktivität ins Home-Assistant-Protokoll und bleibt über Neustarts hinweg aktiv.",
         "data": {
           "gas": "Gaseinheit",
           "water_indoor": "Wassereinheit innen",
-          "water_outdoor": "Wassereinheit außen"
+          "water_outdoor": "Wassereinheit außen",
+          "debug_logging": "Debug-Protokollierung"
         }
       }
     }

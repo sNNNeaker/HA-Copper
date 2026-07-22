@@ -40,17 +40,15 @@
     }
   },
   "options": {
-    "abort": {
-      "no_units": "This premise has no gas or water meters, so there are no units to configure."
-    },
     "step": {
       "init": {
-        "title": "Meter units",
-        "description": "Choose a display unit per meter. Copper reports gas in CCF and water in US gallons; readings are converted into your chosen unit (e.g. m³ or L for European style).",
+        "title": "Copper Labs options",
+        "description": "Choose a display unit per meter. Copper reports gas in CCF and water in US gallons; readings are converted into your chosen unit (e.g. m³ or L for European style). Debug logging writes detailed API activity to the Home Assistant log and stays on across restarts.",
         "data": {
           "gas": "Gas unit",
           "water_indoor": "Indoor water unit",
-          "water_outdoor": "Outdoor water unit"
+          "water_outdoor": "Outdoor water unit",
+          "debug_logging": "Debug logging"
         }
       }
     }

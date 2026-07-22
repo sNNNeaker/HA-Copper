@@ -6,21 +6,41 @@ on every restart) and async_unload_entry() when it's removed/reloaded.
 
 from __future__ import annotations
 
+import logging
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
 
 from .api import CopperAuthError, CopperClient
-from .const import CONF_PREMISE_ID, CONF_REFRESH_TOKEN, CONF_UNITS, DEFAULT_UNITS
+from .const import CONF_DEBUG, CONF_PREMISE_ID, CONF_REFRESH_TOKEN, CONF_UNITS, DEFAULT_UNITS
 from .coordinator import CopperCoordinator
 
 # Which entity platforms this integration provides. Only sensors here.
 PLATFORMS = [Platform.SENSOR]
 
+_LOGGER = logging.getLogger(__name__)
+# The package logger ("custom_components.copper_labs") — setting its level
+# covers every module here (api, coordinator, config_flow, ...).
+_PKG_LOGGER = logging.getLogger(__package__)
+
+
+def _apply_log_level(entry: ConfigEntry) -> None:
+    """Honour the persistent debug-logging option.
+
+    DEBUG when the option is on; NOTSET (inherit HA's configured level) when
+    off, so a user's `logger:` YAML setup still works as expected.
+    """
+    _PKG_LOGGER.setLevel(
+        logging.DEBUG if entry.options.get(CONF_DEBUG, False) else logging.NOTSET
+    )
+
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up one configured account (config entry). Returns True on success."""
+    # Apply the debug-logging option first so even the login/refresh below logs.
+    _apply_log_level(entry)
     # Build the client from the stored refresh token (the only persisted secret).
     client = CopperClient(refresh_token=entry.data[CONF_REFRESH_TOKEN])
 
@@ -71,6 +91,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # setup fails cleanly (HA will retry) instead of adding broken entities.
     coordinator = CopperCoordinator(hass, client, premise, units)
     await coordinator.async_config_entry_first_refresh()
+    _LOGGER.debug(
+        "Setup complete: %d meter(s) discovered, polling every %s",
+        len(coordinator.meters),
+        coordinator.update_interval,
+    )
 
     # Stash the coordinator on the entry so the sensor platform, options flow
     # and diagnostics can find it (modern runtime_data pattern, HA 2024.4+).
@@ -91,10 +116,12 @@ async def _async_reload(hass: HomeAssistant, entry: ConfigEntry) -> None:
     -> token refresh -> rotation -> persist -> reload ...), so only reload when
     the effective units actually differ from what the coordinator is using.
     """
+    # The debug toggle takes effect immediately — no reload required.
+    _apply_log_level(entry)
     coordinator = getattr(entry, "runtime_data", None)
     new_units = {**DEFAULT_UNITS, **entry.options.get(CONF_UNITS, {})}
     if coordinator and coordinator.units == new_units:
-        return  # only the token (or title) changed — nothing to re-apply
+        return  # only the token/debug toggle (or title) changed
     await hass.config_entries.async_reload(entry.entry_id)
 
 

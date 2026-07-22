@@ -17,12 +17,17 @@ from __future__ import annotations
 import base64          # decode JWT payloads; build PKCE values
 import hashlib         # SHA-256 for the PKCE code_challenge
 import json            # JWT payload + API responses are JSON
+import logging         # debug logs into HA's standard logging (or stderr as a script)
 import secrets         # cryptographically-random PKCE verifier + state
 import time            # compare token `exp` against "now"
 from datetime import datetime, timezone
 from urllib.parse import parse_qs, quote, urljoin, urlparse
 
 import requests
+
+# NOTE for all logging in this module: log endpoints, status codes and events —
+# NEVER token values, the emailed code, or PKCE secrets.
+_LOGGER = logging.getLogger(__name__)
 
 # --- endpoints & fixed client parameters --------------------------------------
 API_BASE = "https://api.copperlabs.com/api/v2/app"
@@ -108,6 +113,7 @@ class CopperClient:
         """Adopt a (possibly rotated) refresh token and notify the owner."""
         if not new_token or new_token == self.refresh_token:
             return
+        _LOGGER.debug("Refresh token rotated by Auth0; adopting the new one")
         self.refresh_token = new_token
         if self.token_callback:
             try:
@@ -123,6 +129,7 @@ class CopperClient:
         """Swap the refresh token for a fresh access token (Auth0 refresh grant)."""
         if not self.refresh_token:
             raise CopperAuthError("No refresh_token set.")
+        _LOGGER.debug("Refreshing access token via refresh_token grant")
         resp = requests.post(
             AUTH_TOKEN_URL,
             json={
@@ -158,6 +165,7 @@ class CopperClient:
         state = _b64url(secrets.token_bytes(16))
         self._pending = {"email": email, "verifier": verifier,
                          "challenge": challenge, "state": state}
+        _LOGGER.debug("Requesting sign-in code email via passwordless/start")
         resp = requests.post(
             PASSWORDLESS_START_URL,
             json={
@@ -195,6 +203,10 @@ class CopperClient:
             grant_disabled = "unauthorized_client" in msg or "not allowed for the client" in msg
             if not grant_disabled:
                 raise
+            _LOGGER.debug(
+                "OTP grant not enabled for this client; falling back to the "
+                "verify + authorize flow"
+            )
         # Fallback: the app's exact verify -> authorize(PKCE) -> token sequence.
         self._verify_and_authorize(email, code)
 
@@ -305,8 +317,10 @@ class CopperClient:
         url = f"{API_BASE}/{path.lstrip('/')}"
         r = self.session.get(url, headers=self._auth_header(), params=params, timeout=30)
         if r.status_code == 401:              # token died early -> refresh once, retry
+            _LOGGER.debug("GET %s -> 401; refreshing token and retrying once", path)
             self.refresh()
             r = self.session.get(url, headers=self._auth_header(), params=params, timeout=30)
+        _LOGGER.debug("GET %s -> %s", path, r.status_code)
         r.raise_for_status()
         return r.json()
 

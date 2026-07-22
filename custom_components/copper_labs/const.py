@@ -13,6 +13,7 @@ DOMAIN = "copper_labs"
 CONF_REFRESH_TOKEN = "refresh_token"   # the long-lived Auth0 token the user pastes in
 CONF_PREMISE_ID = "premise_id"         # which premise this entry represents
 CONF_UNITS = "units"                   # per-meter display-unit choices (options flow)
+CONF_DEBUG = "debug_logging"           # persistent debug-log toggle (options flow)
 
 # The data API sets Cache-Control: max-age=900 (15 min), i.e. it only recomputes
 # every 15 minutes. Polling faster just returns cached data, so match that cadence.

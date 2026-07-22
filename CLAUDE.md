@@ -54,6 +54,11 @@ consumer API and feeds the HA Energy dashboard. US/North America hardware only.
 - Auth failures raise `ConfigEntryAuthFailed` → HA's reauth flow
   (`async_step_reauth` in `config_flow.py`). `diagnostics.py` provides redacted
   downloads (token/premise redacted, meter serials aliased).
+- Logging: standard `logging.getLogger(__name__)` everywhere. A persistent
+  `debug_logging` option (options flow) sets the package logger to DEBUG /
+  NOTSET via `_apply_log_level()` in `__init__.py` — applied on setup and on
+  options change without a reload. **Never log token values, the emailed code,
+  or PKCE secrets** — endpoints, status codes and events only.
 
 ## Code style
 - Comment code where it makes sense: docstrings on functions/classes, and

@@ -11,6 +11,8 @@ Sign-in offers two paths:
 
 from __future__ import annotations
 
+import logging
+
 import voluptuous as vol  # HA builds its forms from voluptuous schemas
 
 from homeassistant import config_entries
@@ -18,12 +20,15 @@ from homeassistant.core import callback
 
 from .api import CopperClient, CopperAuthError
 from .const import (
+    CONF_DEBUG,
     CONF_PREMISE_ID,
     CONF_REFRESH_TOKEN,
     CONF_UNITS,
     DEFAULT_UNITS,
     DOMAIN,
 )
+
+_LOGGER = logging.getLogger(__name__)
 
 # Allowed units per meter type, alphabetical. Restricted to what HA's gas/water
 # device classes actually accept (gas can't be L/gal, so it isn't offered).
@@ -72,7 +77,9 @@ class CopperConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 await self.hass.async_add_executor_job(
                     self._client.start_email_login, self._email
                 )
-            except CopperAuthError:
+            except CopperAuthError as err:
+                # str(err) carries the Auth0 status + response snippet, no secrets.
+                _LOGGER.warning("Could not send sign-in code: %s", err)
                 errors["base"] = "send_failed"
             else:
                 # Code sent -> advance to the code-entry screen.
@@ -100,12 +107,16 @@ class CopperConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 # ...then confirm the account has data / discover the premise.
                 state = await self.hass.async_add_executor_job(self._client.get_state)
             except CopperAuthError as err:
+                _LOGGER.warning("Sign-in code exchange failed: %s", err)
                 # Distinguish "wrong code" from "this account can't use the email
                 # grant" (rare) so we can point the latter at the token path.
                 errors["base"] = (
                     "email_unsupported" if "grant" in str(err).lower() else "invalid_code"
                 )
             except Exception:  # noqa: BLE001
+                # Swallowed into a form error for the UI, but keep the traceback
+                # in the log — this login path is the hardest thing to debug blind.
+                _LOGGER.exception("Unexpected error completing email sign-in")
                 errors["base"] = "cannot_connect"
             else:
                 return await self._create_entry(state, self._client.refresh_token)
@@ -126,9 +137,11 @@ class CopperConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 # refresh() proves the token works; get_state() proves it has data.
                 await self.hass.async_add_executor_job(client.refresh)
                 state = await self.hass.async_add_executor_job(client.get_state)
-            except CopperAuthError:
+            except CopperAuthError as err:
+                _LOGGER.warning("Pasted refresh token was rejected: %s", err)
                 errors["base"] = "invalid_auth"
             except Exception:  # noqa: BLE001
+                _LOGGER.exception("Unexpected error validating refresh token")
                 errors["base"] = "cannot_connect"
             else:
                 return await self._create_entry(state, client.refresh_token)
@@ -189,14 +202,22 @@ class CopperOptionsFlow(config_entries.OptionsFlow):
         self.entry = entry  # the entry whose units we're editing
 
     async def async_step_init(self, user_input=None):
-        """Single options step: choose a display unit per meter."""
+        """Single options step: display units per meter + debug-logging toggle."""
+        # Electric is fixed kWh (energy, not volume), so it's never configurable.
+        choices = {"gas": GAS_UNITS, "water_indoor": WATER_UNITS, "water_outdoor": WATER_UNITS}
+
         if user_input is not None:
-            # Merge over any previously saved units so meter types not shown
-            # this time (e.g. meter removed from the premise) keep their choice.
-            merged = {**self.entry.options.get(CONF_UNITS, {}), **user_input}
-            # Save the chosen units; the update listener in __init__ reloads the
-            # entry so entities adopt them.
-            return self.async_create_entry(title="", data={CONF_UNITS: merged})
+            # Split the unit dropdowns from the debug toggle, merging units over
+            # any previously saved ones so meter types not shown this time
+            # (e.g. meter removed from the premise) keep their choice.
+            units = {k: v for k, v in user_input.items() if k in choices}
+            merged = {**self.entry.options.get(CONF_UNITS, {}), **units}
+            # The update listener in __init__ applies the log level and reloads
+            # the entry only if the units changed.
+            return self.async_create_entry(
+                title="",
+                data={CONF_UNITS: merged, CONF_DEBUG: user_input[CONF_DEBUG]},
+            )
 
         # Pre-fill each dropdown with the current value (saved option, else default).
         current = {**DEFAULT_UNITS, **self.entry.options.get(CONF_UNITS, {})}
@@ -208,15 +229,15 @@ class CopperOptionsFlow(config_entries.OptionsFlow):
             if coordinator
             else {"gas", "water_indoor", "water_outdoor"}
         )
-        # Electric is fixed kWh (energy, not volume), so it's never configurable.
-        choices = {"gas": GAS_UNITS, "water_indoor": WATER_UNITS, "water_outdoor": WATER_UNITS}
         schema = {
             # vol.In(...) renders as a dropdown limited to valid units.
             vol.Required(t, default=current[t]): vol.In(choices[t])
             for t in ("gas", "water_indoor", "water_outdoor")
             if t in present
         }
-        if not schema:
-            # e.g. an electric-only premise: nothing unit-related to configure.
-            return self.async_abort(reason="no_units")
+        # Always offered (even on an electric-only premise): persistent debug
+        # logging — survives restarts, unlike HA's generic debug-log button.
+        schema[vol.Required(
+            CONF_DEBUG, default=self.entry.options.get(CONF_DEBUG, False)
+        )] = bool
         return self.async_show_form(step_id="init", data_schema=vol.Schema(schema))

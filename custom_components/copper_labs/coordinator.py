@@ -81,6 +81,15 @@ class CopperCoordinator(DataUpdateCoordinator):
                 reading["power"] = convert_volume(reading["power"], src, dst)
                 # Key by meter id so each entity can look up its own reading.
                 data[meter["id"]] = reading
+                _LOGGER.debug(
+                    "Meter %s (%s): value=%s %s, power=%s, at %s",
+                    meter["id"],
+                    meter["type"],
+                    reading["value"],
+                    dst,
+                    reading["power"],
+                    reading["time"],
+                )
         except CopperAuthError as err:
             # The refresh token was rejected/revoked. Raising ConfigEntryAuthFailed
             # makes HA start the reauth flow (a "sign in again" repair) instead of
