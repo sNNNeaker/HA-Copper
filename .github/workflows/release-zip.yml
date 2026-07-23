@@ -1,0 +1,47 @@
+name: Release zip
+
+# Builds copper_labs.zip (the integration folder's contents) and attaches it
+# to the GitHub release. HACS downloads this asset instead of the source
+# archive (hacs.json: zip_release) — and unlike source archives, GitHub
+# counts asset downloads, giving us install statistics per release.
+#
+# workflow_dispatch = dry run: builds the same zip and uploads it as a CI
+# artifact for inspection, without touching any release.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+  # Dry-run also on preview pushes: workflow_dispatch only works once the
+  # file exists on the default branch, so this is how the branch tests it.
+  push:
+    branches: [preview]
+
+# Uploading a release asset needs write access — scoped to this workflow
+# only; validate.yml stays read-only.
+permissions:
+  contents: write
+
+jobs:
+  zip:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Build zip
+        # HACS expects the integration's files at the zip root
+        # (manifest.json etc. directly in the archive, no folder prefix).
+        run: |
+          cd custom_components/copper_labs
+          zip -r "$GITHUB_WORKSPACE/copper_labs.zip" .
+          unzip -l "$GITHUB_WORKSPACE/copper_labs.zip"
+      - name: Attach to release
+        if: github.event_name == 'release'
+        run: gh release upload "${{ github.event.release.tag_name }}" copper_labs.zip --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload dry-run artifact
+        if: github.event_name != 'release'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: copper_labs-zip-dry-run
+          path: copper_labs.zip
