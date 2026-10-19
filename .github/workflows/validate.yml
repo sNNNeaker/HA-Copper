@@ -36,10 +36,9 @@ jobs:
       - uses: hacs/action@main
         with:
           category: integration
-          # "brands" only applies to integrations shipped in HA core / listed in
-          # the home-assistant/brands repo. This is an unofficial custom repo, so
-          # that check can't pass and is not required for HACS installation.
-          ignore: brands
+          # No "ignore": the brands check reads custom_components/copper_labs/brand/
+          # (icon.png), and the hacs/default catalog rejects runs with ignored
+          # checks anyway.
 
   tests:
     name: Unit tests
