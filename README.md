@@ -1,6 +1,7 @@
 <p align="center">
-  <!-- Plain <img> with an absolute URL: HACS's markdown renderer doesn't
-       support <picture>/<source>, and relative paths only resolve on GitHub. -->
+  <!-- Plain <img> with an absolute URL: the HACS/Marketplace README renderer
+       doesn't support <picture>/<source>, and relative paths only resolve on
+       GitHub. -->
   <img alt="Copper Labs" src="https://raw.githubusercontent.com/sNNNeaker/HA-Copper/main/custom_components/copper_labs/brand/logo%402x.png" width="420">
 </p>
 
@@ -38,7 +39,26 @@ any Copper entity — one call refreshes all meters.
 
 ## Install
 
-### Via HACS (recommended)
+This repository is not (yet) in the community catalog, so it has to be added
+as a **custom repository** either way.
+
+### Via the Marketplace (Home Assistant 2026.11 and newer)
+From 2026.11 HACS is built into Home Assistant as the **Marketplace**
+(Settings → Marketplace); there is nothing separate to install.
+1. In the Marketplace, add `https://github.com/sNNNeaker/HA-Copper` as a
+   custom repository of type **Integration**. Custom repositories are fetched
+   through the GitHub API, so the Marketplace asks you to connect a GitHub
+   account the first time (catalog entries don't need one).
+2. Download **Copper Labs**. No restart is needed on first install — the
+   Marketplace loads config-flow integrations straight away.
+3. Settings → Devices & Services → Add Integration → **Copper Labs**, or use
+   [![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=copper_labs)
+
+Updates show up under Settings → Updates (custom repositories are checked
+about every 48 h); installing an update still needs a restart, which the
+Marketplace offers via a repair.
+
+### Via HACS (Home Assistant 2026.10 and older)
 1. In HACS, open the ⋮ menu → **Custom repositories**, add
    `https://github.com/sNNNeaker/HA-Copper` with type **Integration**.
 2. Search for **Copper Labs** in HACS and download it.

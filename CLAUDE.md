@@ -24,15 +24,17 @@ consumer API and feeds the HA Energy dashboard. US/North America hardware only.
   (`copper_labs`).
 
 ## Layout
-- `custom_components/copper_labs/` — the integration (required path for HACS).
+- `custom_components/copper_labs/` — the integration (required path for
+  HACS / the Marketplace).
 - `custom_components/copper_labs/translations/` — `en.json`, `de.json`. Translate
   values only; never change keys.
 - `custom_components/copper_labs/brand/` — icon + logo, light and dark variants
   (`icon.png`/`icon@2x.png`, `logo.png`/`logo@2x.png`, and `dark_*` versions).
   HA's Brands Proxy API (2026.3+) serves these locally and they take priority
-  over the brands CDN. **Do not submit these to the `home-assistant/brands`
-  repo — it no longer accepts custom integrations.** Sizes: icon 256/512 square;
-  logo shortest side 128 (`logo.png`) / 256 (`logo@2x.png`).
+  over the brands CDN; the HACS action's `brands` check and the Marketplace
+  (which shows them before install, from the latest release) read this folder
+  too, so nothing is submitted to `home-assistant/brands`. Sizes: icon 256/512
+  square; logo shortest side 128 (`logo.png`) / 256 (`logo@2x.png`).
 - `copper_client.py` (repo root) — standalone version of `api.py` for testing
   outside HA. Not part of the shipped component.
 - `tests/` — pure unit tests for the HA-free modules only (`const.py`,
@@ -40,6 +42,19 @@ consumer API and feeds the HA Energy dashboard. US/North America hardware only.
   package `__init__.py` (which needs HA) never runs. Keep new tests HA-free or
   they'll break CI, which installs only pytest + requests.
 - `hacs.json`, `LICENSE`, `.github/` — packaging/CI, not runtime code.
+
+## Distribution (HACS → Marketplace)
+- From HA 2026.11 HACS ships in core as the **Marketplace** (same catalog,
+  same `hacs.json`, same release assets). Nothing in the package changes; the
+  Marketplace only refuses installs without a `manifest.json` `version`.
+- This repo is a **custom repository**, not in the `hacs/default` catalog. On
+  2026.11+ that means users need a GitHub connection (device flow) to add and
+  update it; catalog entries install from the release asset without one.
+  Getting into the catalog needs the HACS action to pass **without any
+  `ignore`** plus hassfest and a full release; the review backlog is months.
+- `hacs.json`: `render_readme` is a HACS-only key the Marketplace ignores;
+  `zip_release` + `filename` remain supported for integrations.
+- Bugs in the store itself go to `home-assistant/core`, not `hacs/integration`.
 
 ## Data model (don't break)
 - Per meter: a `total_increasing` register sensor (from the cumulative `value`
@@ -70,8 +85,9 @@ consumer API and feeds the HA Energy dashboard. US/North America hardware only.
   behavior). Don't comment the self-explanatory.
 
 ## Releases (versioning)
-- HACS shows versions from **GitHub releases**; without one it falls back to
-  commit SHAs. HA's integration page shows `manifest.json`'s `version`.
+- HACS / the Marketplace show versions from **GitHub releases**; without one
+  they fall back to commit SHAs. HA's integration page shows `manifest.json`'s
+  `version`.
 - To release: bump `version` in `manifest.json`, commit, then
   `gh release create vX.Y.Z` with the **same number** (tag `v`-prefixed).
   Never let the tag and manifest diverge.
@@ -82,9 +98,10 @@ consumer API and feeds the HA Energy dashboard. US/North America hardware only.
 - **Code changes never go directly to `main`.** Push them to a `preview`
   branch first; the user tests on their HA, then the change is merged to
   `main` (and released) after their approval. Docs-only changes may go
-  straight to main. Note: HACS only installs releases/the default branch, so
-  preview testing happens by manually copying `custom_components/copper_labs/`
-  to the HA instance (or merging to main without tagging).
+  straight to main. Note: HACS / the Marketplace only install releases/the
+  default branch, so preview testing happens by manually copying
+  `custom_components/copper_labs/` to the HA instance (or merging to main
+  without tagging).
 
 ## Before pushing
 - CI runs hassfest + HACS validate + pytest (tests/) on push. Keep all green.
