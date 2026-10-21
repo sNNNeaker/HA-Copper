@@ -27,6 +27,7 @@ SOURCE_UNITS = {
     "water_indoor": "gal",
     "water_outdoor": "gal",
     "electric": "kWh",
+    "power": "kWh",
 }
 
 # Default *display* unit per meter type. Set equal to the source units so the
