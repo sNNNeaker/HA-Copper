@@ -39,33 +39,31 @@ any Copper entity — one call refreshes all meters.
 
 ## Install
 
-This repository is not (yet) in the community catalog, so it has to be added
-as a **custom repository** either way.
+Copper Labs is in the HACS community catalog, so you can find it by name;
+no custom repository is needed.
 
 ### Via the Marketplace (Home Assistant 2026.11 and newer)
 From 2026.11 HACS is built into Home Assistant as the **Marketplace**
 (Settings → Marketplace); there is nothing separate to install.
-1. In the Marketplace, add `https://github.com/sNNNeaker/HA-Copper` as a
-   custom repository of type **Integration**. Custom repositories are fetched
-   through the GitHub API, so the Marketplace asks you to connect a GitHub
-   account the first time (catalog entries don't need one).
-2. Download **Copper Labs**. No restart is needed on first install — the
-   Marketplace loads config-flow integrations straight away.
-3. Settings → Devices & Services → Add Integration → **Copper Labs**, or use
+1. In the Marketplace, search for **Copper Labs** and download it. Catalog
+   entries install from the release asset, so no GitHub connection is needed.
+   No restart is needed on first install — the Marketplace loads config-flow
+   integrations straight away.
+2. Settings → Devices & Services → Add Integration → **Copper Labs**, or use
    [![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=copper_labs)
 
-Updates show up under Settings → Updates (custom repositories are checked
-about every 48 h); installing an update still needs a restart, which the
-Marketplace offers via a repair.
+Updates show up under Settings → Updates; installing an update still needs a
+restart, which the Marketplace offers via a repair.
 
 ### Via HACS (Home Assistant 2026.10 and older)
-1. In HACS, open the ⋮ menu → **Custom repositories**, add
-   `https://github.com/sNNNeaker/HA-Copper` with type **Integration**.
-2. Search for **Copper Labs** in HACS and download it.
-3. Restart Home Assistant.
-4. Settings → Devices & Services → Add Integration → **Copper Labs**.
+1. In HACS, search for **Copper Labs** and download it.
+2. Restart Home Assistant.
+3. Settings → Devices & Services → Add Integration → **Copper Labs**.
 
-HACS also notifies you about updates.
+HACS also notifies you about updates. If you added this repository as a
+custom repository before it joined the catalog, that keeps working; you can
+remove the custom entry (HACS ⋮ menu → Custom repositories) without
+uninstalling the integration.
 
 ### Manual (alternative)
 1. Copy `custom_components/copper_labs/` from this repo to

@@ -47,11 +47,12 @@ consumer API and feeds the HA Energy dashboard. US/North America hardware only.
 - From HA 2026.11 HACS ships in core as the **Marketplace** (same catalog,
   same `hacs.json`, same release assets). Nothing in the package changes; the
   Marketplace only refuses installs without a `manifest.json` `version`.
-- This repo is a **custom repository**, not in the `hacs/default` catalog. On
-  2026.11+ that means users need a GitHub connection (device flow) to add and
-  update it; catalog entries install from the release asset without one.
-  Getting into the catalog needs the HACS action to pass **without any
-  `ignore`** plus hassfest and a full release; the review backlog is months.
+- This repo is **in the `hacs/default` catalog** (PR hacs/default#12258,
+  merged 2026-10-24 by frenck). Catalog entries install from the release
+  asset without a GitHub connection, also in the 2026.11+ Marketplace. To
+  stay listed: keep the HACS action passing **without any `ignore`**, plus
+  hassfest, and keep publishing full GitHub releases; don't archive or rename
+  the repo (a rename needs a hacs/default PR).
 - `hacs.json`: `render_readme` is a HACS-only key the Marketplace ignores;
   `zip_release` + `filename` remain supported for integrations.
 - Bugs in the store itself go to `home-assistant/core`, not `hacs/integration`.
