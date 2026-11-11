@@ -27,6 +27,7 @@ DEVICE_CLASS = {
     "water_indoor": SensorDeviceClass.WATER,
     "water_outdoor": SensorDeviceClass.WATER,
     "electric": SensorDeviceClass.ENERGY,
+    "power": SensorDeviceClass.ENERGY,
 }
 
 
@@ -115,7 +116,7 @@ class CopperRateSensor(_CopperBase):
         self._attr_unique_id = f"{DOMAIN}_{self._mid.replace(':', '_')}_rate"
         # Short name; HA prefixes the device name ("Copper gas meter Rate").
         self._attr_name = "Rate"
-        if meter["type"] == "electric":
+        if meter["type"] in ("electric", "power"):
             # Electric "power" is kWh consumed per hour — that's just kilowatts,
             # so give it the proper power device class instead of "kWh/h".
             self._attr_device_class = SensorDeviceClass.POWER
@@ -135,7 +136,7 @@ class CopperRateSensor(_CopperBase):
         power = self._data().get("power")  # native units per hour (coordinator)
         if power is None:
             return None
-        if self._meter["type"] == "electric":
+        if self._meter["type"] in ("electric", "power"):
             return round(float(power), 3)  # kWh/h == kW, no conversion
         # native volume per hour -> m³ per hour.
         return round(convert_volume(float(power), SOURCE_UNITS[self._meter["type"]], "m³"), 5)

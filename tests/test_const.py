@@ -47,3 +47,12 @@ def test_convert_round_trip():
     there = const.convert_volume(250.0, "gal", "m³")
     back = const.convert_volume(there, "m³", "gal")
     assert back == pytest.approx(250.0, rel=1e-12)
+
+
+def test_power_and_electric_units():
+    # Both 'power' (as returned by the live API) and 'electric' map to kWh
+    assert const.SOURCE_UNITS.get("power") == "kWh"
+    assert const.SOURCE_UNITS.get("electric") == "kWh"
+    assert const.DEFAULT_UNITS.get("power") == "kWh"
+    assert const.DEFAULT_UNITS.get("electric") == "kWh"
+
